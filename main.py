@@ -29,18 +29,27 @@ for fund in df:
     getTable = [False, False, False, False]
     if soup.find("div", attrs={"class":"asset section"}):
         getTable[0] = True
-    if soup.find("div", attrs={"class" : "syleBox section"})
+    if soup.find("div", attrs={"class" : "syleBox section"}):
         getTable[1] = True
-    if soup.find("div") #h3 Sector Allocation
-    dfs = pandas.read_html(str(tables[0:4]))
-    print(dfs)
-    for df in dfs:
-        csvF = open("./Funds/" + fund["name"] + ".csv", "a")
-        df.to_csv("./Funds/" + fund["name"] + ".csv", mode="a")
-        csvF.write("\n")
-        csvF.close()
+    if soup.find(text="Sector Allocation"): #h3 Sector Allocation
+        getTable[2] = True
+    if soup.find(text="Top Holdings"):
+        getTable[3] = True
+    
+    finalStr = ""
+    for i, get in enumerate(getTable):
+        if get:
+            finalStr += str(tables[i])
+    if len(finalStr) != 0:
+        dfs = pandas.read_html(finalStr)
+        print(dfs)
+        for df in dfs:
+            csvF = open("./Funds/" + fund["name"] + ".csv", "a")
+            df.to_csv("./Funds/" + fund["name"] + ".csv", mode="a")
+            csvF.write("\n")
+            csvF.close()
 
-    fundsInfoDict[fund["name"]] = df.to_dict()
+        fundsInfoDict[fund["name"]] = df.to_dict()
 
 json.dump(fundsInfoDict, f, sort_keys=True, indent=4)
 f.close()
