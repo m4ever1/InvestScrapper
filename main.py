@@ -68,12 +68,20 @@ Q = t/n
 lMax = 1 + 1/Q + 2*np.sqrt(1/Q)
 lMin = 1 + 1/Q - 2*np.sqrt(1/Q)
 
-for row in table.findAll('tr')[1:]:
-    ticker = row.findAll('td')[0].text
+for ticker in G.columns:
+    row = table.find("a", string=ticker).parent.parent
     sector = row.findAll('td')[3].text
-    ticker = ticker.strip()
-    if ticker in G.columns:
-        sectors_dict[sector].append(ticker)
+    sectors_dict[sector].append(ticker)
+# for row in table.findAll('tr')[1:]:
+#     ticker = row.findAll('td')[0].text
+#     sector = row.findAll('td')[3].text
+#     ticker = ticker.strip()
+#     if ticker in G.columns:
+#         sectors_dict[sector].append(ticker)
+
+# for ticker in G.columns:
+#     sector = yf.Ticker(ticker).info["sector"]
+#     sectors_dict[sector].append(ticker)
 
 
 setOfSectors = set(sectors_dict.keys())
