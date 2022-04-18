@@ -1,3 +1,4 @@
+from operator import attrgetter
 import bs4 as bs
 import requests
 import yfinance as yf
@@ -5,6 +6,9 @@ import datetime
 import pandas as pd
 import numpy as np
 from collections import defaultdict
+from itemset_mining.two_phase_huim import TwoPhase
+import random
+
 
 # store = pd.HDFStore('stocks.h5')
 
@@ -25,22 +29,23 @@ for row in table.findAll('tr')[1:]:
 # end = datetime.datetime(2021, 1, 1)
 # data = yf.download(tickers, start=start, end=end)
 
-# data.to_csv("stocks.csv")
+# data["Adj Close"].to_csv("stocks.csv")
 # store["data"] = data
 
 # data = store['data']
-data = pd.read_csv("stocks.csv", header=[0, 1])
-data.columns = pd.MultiIndex.from_tuples(data.columns)
+df = pd.read_csv("stocks.csv")
+df = df.set_index("Date")
 
-new_header = data.iloc[0] #grab the first row for the header
-data = data[1:] #take the data less the header row
-data.set_index(data.columns[0])
-data.set_index(('Unnamed: 0_level_0', 'Unnamed: 0_level_1'))
-data.rename(columns = {"Unnamed: 0_level_0" : "Stat", "Unnamed: 0_level_1" : "Ticker"})
-df = data["Adj Close"]
+# new_header = data.iloc[0] #grab the first row for the header
+# data = data[1:] #take the data less the header row
+# data.set_index(data.columns[0])
+# data.set_index(('Unnamed: 0_level_0', 'Unnamed: 0_level_1'))
+# data.rename(columns = {"Unnamed: 0_level_0" : "Stat", "Unnamed: 0_level_1" : "Ticker"})
+# df = data["Adj Close"]
 df = df.dropna(how="all")
 df = df.dropna(axis=1)
 df = df.interpolate()
+df = df.sort_index()
 G = pd.DataFrame()
 
 
@@ -84,40 +89,64 @@ for ticker in G.columns:
 #     sectors_dict[sector].append(ticker)
 
 
-setOfSectors = set(sectors_dict.keys())
+# setOfSectors = set(sectors_dict.keys())
 
-Pmatrix = np.zeros([len(setOfSectors), len(G.columns)])
-P = pd.DataFrame(Pmatrix, columns=G.columns)
+# Pmatrix = np.zeros([len(setOfSectors), len(G.columns)])
+# P = pd.DataFrame(Pmatrix, columns=G.columns)
 
 
 
-for sectorId, stocks in enumerate(sectors_dict.values()):
-    for stock in stocks:
-        Nl = len(stocks)
-        P[stock][sectorId] = 1/Nl
+# for sectorId, stocks in enumerate(sectors_dict.values()):
+#     for stock in stocks:
+#         Nl = len(stocks)
+#         P[stock][sectorId] = 1/Nl
 
     
 
-w, v = np.linalg.eig(C)
+# w, v = np.linalg.eig(C)
 
-# eigVectors = np.delete(v, 0, axis=0)
+# # eigVectors = np.delete(v, 0, axis=0)
 
-lastVector = 0
-for i, value in enumerate(w):
-    if value < lMax:
-        lastVector = i
-        break
+# lastVector = 0
+# for i, value in enumerate(w):
+#     if value < lMax:
+#         lastVector = i
+#         break
 
-eigValues = w #[1:(lastVector)]
-eigVectors = v #[1:(lastVector)]
+# eigValues = w #[1:(lastVector)]
+# eigVectors = v #[1:(lastVector)]
 
-eigVectorsSquared = np.square(eigVectors)
+# eigVectorsSquared = np.square(eigVectors)
 
-X = np.dot(eigVectorsSquared, P.T)
-# X = np.zeros([442, 120])
-# for k, eigVector in enumerate(eigVectors):
-#     for l, pVector in enumerate(np.matrix(P)):
-#         X[k][l] = np.sum(np.multiply(pVector, np.square(eigVector)))
+# X = np.dot(eigVectorsSquared, P.T)
+# # X = np.zeros([442, 120])
+# # for k, eigVector in enumerate(eigVectors):
+# #     for l, pVector in enumerate(np.matrix(P)):
+# #         X[k][l] = np.sum(np.multiply(pVector, np.square(eigVector)))
 
-print(X)
+# print(X)
 
+
+pctChangeDf = df.apply(lambda x: x.div(x.iloc[0]).subtract(1).mul(100))
+
+stocksToTransact = []
+for stck in list(sectors_dict.values()):
+    stock_name = stck[0]
+    stocksToTransact.append(stock_name)
+
+transactions = pctChangeDf[pctChangeDf.columns[pctChangeDf.columns.isin(stocksToTransact)]]
+# transactions = transactions.clip(0)
+# transactions = transactions.round(0).astype(int)
+# wSupport = transactions.min(axis=1).mean()
+
+listOfTransLists = [[(tick, transactions.iloc[1][j]) for j, tick in enumerate(transactions.columns) if transactions.iloc[1][j] != 0] for i in range(len(transactions.index)) if i < 3]
+
+# listOfTransLists = [(column, random.randint(1,10)) for column in transactions.columns[0:6]]
+    
+# listOfTransLists = [list(transactions.iloc[i].items()) for i in range(len(transactions.index))]
+
+profits = dict.fromkeys(transactions.columns, 1)
+
+hui = TwoPhase(listOfTransLists, profits, -1)
+result = hui.get_hui()
+print(sorted(result, key=attrgetter('itemset_utility'), reverse=True))
