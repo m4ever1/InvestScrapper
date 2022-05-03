@@ -8,6 +8,7 @@ import numpy as np
 from collections import defaultdict
 from itemset_mining.two_phase_huim import TwoPhase
 import random
+from spmf import Spmf
 
 
 # store = pd.HDFStore('stocks.h5')
@@ -139,14 +140,15 @@ transactions = pctChangeDf[pctChangeDf.columns[pctChangeDf.columns.isin(stocksTo
 # transactions = transactions.round(0).astype(int)
 # wSupport = transactions.min(axis=1).mean()
 
-listOfTransLists = [[(tick, transactions.iloc[1][j]) for j, tick in enumerate(transactions.columns) if transactions.iloc[1][j] != 0] for i in range(len(transactions.index)) if i < 3]
+# listOfTransLists = [[(tick, transactions.iloc[i][j]) for j, tick in enumerate(transactions.columns) if transactions.iloc[i][j] != 0] for i in range(len(transactions.index)) if  1 < i < 4]
 
 # listOfTransLists = [(column, random.randint(1,10)) for column in transactions.columns[0:6]]
-    
-# listOfTransLists = [list(transactions.iloc[i].items()) for i in range(len(transactions.index))]
+transactions.columns = range(1, len(transactions.columns) + 1)
+
+listOfTransLists = [f"{}:{transactions.iloc[1].sum()}:{np.array_str(transactions.iloc[1].values, max_line_width=float('inf'))[1:-1]}" for i in range(len(transactions.index))]
 
 profits = dict.fromkeys(transactions.columns, 1)
 
-hui = TwoPhase(listOfTransLists, profits, -1)
-result = hui.get_hui()
-print(sorted(result, key=attrgetter('itemset_utility'), reverse=True))
+# hui = TwoPhase(listOfTransLists, profits, 30)
+# result = hui.get_hui()
+# print(sorted(result, key=attrgetter('itemset_utility'), reverse=True))
