@@ -9,7 +9,23 @@ from collections import defaultdict
 from itemset_mining.two_phase_huim import TwoPhase
 import random
 from spmf import Spmf
+import re
 
+
+def whitespace_remover(dataframe):
+   
+    # iterating over the columns
+    for i in dataframe.columns:
+         
+        # checking datatype of each columns
+        if dataframe[i].dtype == 'object':
+             
+            # applying strip function on column
+            dataframe[i] = dataframe[i].map(str.strip)
+        else:
+             
+            # if condn. is False then it will do nothing.
+            pass
 
 # store = pd.HDFStore('stocks.h5')
 
@@ -26,14 +42,13 @@ for row in table.findAll('tr')[1:]:
     # sectors_dict[sector].append(ticker)
 
 # tickers = [s.replace('\n', '') for s in tickers]
-# start = datetime.datetime(2011, 1, 1)
-# end = datetime.datetime(2021, 1, 1)
+# start = datetime.datetime(2021, 1, 1)
+# end = datetime.datetime(2022, 5, 10)
 # data = yf.download(tickers, start=start, end=end)
 
 # data["Adj Close"].to_csv("stocks.csv")
-# store["data"] = data
 
-# data = store['data']
+
 df = pd.read_csv("stocks.csv")
 df = df.set_index("Date")
 
@@ -144,11 +159,24 @@ transactions = pctChangeDf[pctChangeDf.columns[pctChangeDf.columns.isin(stocksTo
 
 # listOfTransLists = [(column, random.randint(1,10)) for column in transactions.columns[0:6]]
 transactions.columns = range(1, len(transactions.columns) + 1)
+transactions = transactions.multiply(10).astype('int')
+# whitespace_remover(transactions)
+# listOfTransLists = [f"{' '.join(map(str, range(1, len(transactions.columns) + 1)))}:{transactions.iloc[i].sum()}:{np.array2string(transactions.iloc[i].values, max_line_width=float('inf'), floatmode='fixed', sign='-')[1:-1]}" for i in range(len(transactions.index))]
 
-listOfTransLists = [f"{}:{transactions.iloc[1].sum()}:{np.array_str(transactions.iloc[1].values, max_line_width=float('inf'))[1:-1]}" for i in range(len(transactions.index))]
+# listOfTransLists = [re.sub("  +", " ", x) for x in listOfTransLists]
+stockToSector = {stock: index for index, tuple in enumerate(sectors_dict.items()) for stock in tuple[1]}
 
-profits = dict.fromkeys(transactions.columns, 1)
+# listOfTransLists = '\r\n'.join(f"{' '.join(map(str, range(1, len(transactions.columns) + 1)))}:{transactions.iloc[i].sum()}:{np.array2string(transactions.iloc[i].values, max_line_width=float('inf'), floatmode='fixed', sign='-')[1:-1].strip()}" for i in range(len(transactions.index)))
+listOfTransLists = '\r\n'.join(f"{' '.join(map(str, transactions.columns))}:{' '.join(map(str, [stockToSector[index] for index in transactions.iloc[i].index]))}:{np.array2string(transactions.iloc[i].values, max_line_width=float('inf'), floatmode='fixed', sign='-')[1:-1].strip()}" for i in range(len(transactions.index)))
+listOfTransLists = re.sub("  +", " ", listOfTransLists)
 
+with open("input.txt", "w") as f:
+    f.write(listOfTransLists)
+
+# profits = dict.fromkeys(transactions.columns, 1)
+
+# spmf = Spmf("TKU-CEP" , input_filename="input.txt", output_filename="output.txt", arguments=[10])
+# spmf.run()
 # hui = TwoPhase(listOfTransLists, profits, 30)
 # result = hui.get_hui()
 # print(sorted(result, key=attrgetter('itemset_utility'), reverse=True))
