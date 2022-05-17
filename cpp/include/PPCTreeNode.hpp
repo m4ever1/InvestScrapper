@@ -5,6 +5,7 @@ class PPCTreeNode {
 
 public:
 	std::string name;
+	int label;
 	std::shared_ptr<PPCTreeNode> firstChild;
 	std::shared_ptr<PPCTreeNode> rightSibling;
 	std::shared_ptr<PPCTreeNode> labelSibling;

@@ -9,6 +9,7 @@ class Item
 private:
 
 public:
+    int myLabel;
     std::string myName;
     float myExternalUtil;
     // float myInternalUtil;
