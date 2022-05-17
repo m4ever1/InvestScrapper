@@ -1,8 +1,10 @@
 #include "Tree.hpp"
 
-Tree::Tree(const std::vector<std::vector<Item>>& vectorIn) : myTransactionsVector(vectorIn)
+Tree::Tree(const std::vector<std::vector<Item>>& vectorIn, const int& minSup) : 
+myTransactionsVector(vectorIn), 
+myMinSup(minSup)
 {
-    myRoot.name = -1;
+    myRoot.label = -1;
 }
 
 Tree::~Tree() {
@@ -10,6 +12,8 @@ Tree::~Tree() {
 }
 bool Tree::buildTree()
 {
+    int numberOfTransactions = myTransactionsVector.size();
+    int numberOfUniqueItems = myTransactionsVector[0].size();
     for(const auto& transaction: myTransactionsVector)
     {
         int curPos = 0;
@@ -62,17 +66,17 @@ bool Tree::buildTree()
             curRoot = ppcNode;
         }
     }
-    myHeadTable = std::make_shared<int[]>()
-    // headTable = new PPCTreeNode*[numOfFItem];
-	// memset(headTable, 0, sizeof(int*) * numOfFItem);
-	// headTableLen = new int[numOfFItem];
-	// memset(headTableLen, 0, sizeof(int) * numOfFItem);
-	// PPCTreeNode **tempHead = new PPCTreeNode*[numOfFItem];
-	
-	// itemsetCount = new int[(numOfFItem-1) * numOfFItem / 2];
-	// memset(itemsetCount, 0, sizeof(int) * (numOfFItem-1) * numOfFItem / 2);
+    //TODO: Consider only assets which have positive percentages at the last timestamp
+    myHeadTable = std::shared_ptr<std::shared_ptr<PPCTreeNode>[]>(new std::shared_ptr<PPCTreeNode>[numberOfUniqueItems]);
+    myHeadTableLen = std::shared_ptr<int[]>(new int[numberOfUniqueItems]);
+
+	myItemsetCount = std::shared_ptr<int[]>(new int[(numberOfUniqueItems-1) * numberOfUniqueItems / 2]);
+	memset(myItemsetCount.get(), 0, sizeof(int) * (numberOfUniqueItems-1) * numberOfUniqueItems / 2);
+
+	std::memset(myHeadTableLen.get(), 0, sizeof(int) * numberOfUniqueItems);
+
 	// TODO: CHANGE MAP INTO ARRAYS
-    // TODO: FIGURE OUT WTF "numOfFItem" is...
+
 	std::shared_ptr<PPCTreeNode> root = myRoot.firstChild;
 	int pre = 0, last = 0;
 	while(root != NULL)
@@ -80,9 +84,10 @@ bool Tree::buildTree()
 		root->foreIndex = pre;
 		pre++;
 
-		if(myHeadMap.find(root->name) == myHeadMap.end())
+		if(myHeadTable[root->label] == NULL)
 		{	
-			myHeadMap.emplace(root->name, root);
+            myHeadTable[root->label] = root;
+
 			// tempHead[root->name] = root;
 		}
 		else
@@ -91,20 +96,12 @@ bool Tree::buildTree()
 			// tempHead[root->label] = root;		
 		}
 
-        if (myHeadMapLen.find(root->name) == myHeadMapLen.end())
-        {
-            myHeadMapLen.emplace(root->name, 1);
-        }
-        else
-        {
-		    myHeadMapLen[root->name]++;
-        }
+        myHeadTableLen[root->label]++;
         
-    
-		PPCTreeNode *temp = root->father;
+		std::shared_ptr<PPCTreeNode> temp = root->father;
 		while(temp->label != -1)
 		{
-			itemsetCount[root->label * (root->label - 1) / 2 + temp->label] += root->count;
+			myItemsetCount[root->label * (root->label - 1) / 2 + temp->label] += root->count;
 			temp = temp->father;
 		}
 		if(root->firstChild != NULL)

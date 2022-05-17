@@ -99,17 +99,21 @@ void getData(FILE * in, char *filename, double support)
 	int numOfItem = 0;
 	int num = 0;
 	int col = 0;
+	//For every line in the file
 	while(fgets(str,500,in))
 	{
-		if(feof(in)) break;
+		if(feof(in)) break; // If it's the end of the file, halt
 		numOfTrans++;
 		num = 0;
-		for(int i = 0; i < 500 && str[i] != '\0'; i++)
-		{			
-			if(str[i] != ' ')	num = num * 10 + str[i] - '0';			
+		for(int i = 0; i < 500 && str[i] != '\0'; i++) // Iterate through every char
+		{
+			// If char is not space	then num is equal to 			
+			if(str[i] != ' ')	num = num * 10 + str[i] - '0';		
 			else
 			{				
 				col = num / 10000;
+				// Initially, it allocates 10k items, 
+				// if it runs out of space, it allocates an extra 10k, I guess...
 				if(col >= size)				
 				{
 					for(int j = size; j <= col; j++)
@@ -123,6 +127,7 @@ void getData(FILE * in, char *filename, double support)
 					}
 					size = col + 1;
 				}
+				// If it's the first time we've seen the item, increment numOfItem
 				if(0 == tempItem[col][num % 10000].num++) numOfItem++;
 				num = 0;
 			}
@@ -131,6 +136,7 @@ void getData(FILE * in, char *filename, double support)
 	fclose(in);
 	
 	Min_Support = int(support * numOfTrans);
+	// Copy items over from tempitem to item
 	item = new Item[numOfItem];	
 	for(int i = 0, p = 0; i < size; i++)
 		for(int j = 0;j < 10000; j++)
@@ -140,9 +146,12 @@ void getData(FILE * in, char *filename, double support)
 	for(int i = 0; i < size; i++) 
 		delete[] tempItem[i];
 	delete[] tempItem;
-	
+	// sort items according to the number of times they show up (num)
 	qsort(item, numOfItem, sizeof(Item), comp);
+	// While numOfFItem is smaller than number of unique items, increment it...
 	for(numOfFItem = 0; numOfFItem < numOfItem; numOfFItem++)
+		// if we find an item in which its number of appearances is smaller than Min_support:
+		// halt and numOfFItem is set to the number of this iteration.
 		if(item[numOfFItem].num < Min_Support) 
 			break;
 }
