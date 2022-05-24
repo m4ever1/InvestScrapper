@@ -2,10 +2,7 @@
 #define __ITEM_H__
 
 #include <iostream>
-#include <string>
 
-using itemName = std::string;
-using Transaction = std::vector<Item>;
 
 class Item
 {
@@ -15,12 +12,11 @@ public:
     int myLabel;
     std::string myName;
     float myExternalUtil;
+    // float myInternalUtil;
     std::string mySector;
     Item(std::string name, float extUtil, std::string sector);
     std::string toString();
-    bool operator<(const Item& i2) const;
+
     ~Item();
 };
-
-
 #endif // __ITEM_H__

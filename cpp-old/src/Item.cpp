@@ -12,8 +12,3 @@ mySector(sector)
 Item::~Item()
 {
 }
-
-bool Item::operator<(const Item& i2) const
-{
-   return this->myName < i2.myName;
-}
