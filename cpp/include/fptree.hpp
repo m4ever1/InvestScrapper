@@ -8,13 +8,18 @@
 #include <string>
 #include <vector>
 #include <utility>
+#include <algorithm>
+#include <list>
+
 #include "Item.hpp"
+#include "EquivTrans.hpp"
 
 using TransformedPrefixPath = std::pair<std::vector<Item>, uint64_t>;
 using Pattern = std::pair<std::set<Item>, uint64_t>;
 
 
-struct FPNode {
+class FPNode {
+public:
     const Item item;
     uint64_t frequency;
     std::shared_ptr<FPNode> node_link;
@@ -22,9 +27,13 @@ struct FPNode {
     std::vector<std::shared_ptr<FPNode>> children;
 
     FPNode(const Item&, const std::shared_ptr<FPNode>&);
+
+    static std::list<EquivTrans> convertToEquivTrans(Transaction trans);
 };
 
-struct FPTree {
+class FPTree {
+public:
+    const Item item;
     std::shared_ptr<FPNode> root;
     std::map<Item, std::shared_ptr<FPNode>> header_table;
     uint64_t minimum_support_threshold;

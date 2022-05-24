@@ -4,8 +4,11 @@
 #include <iostream>
 #include <string>
 
+class Item;
+
 using itemName = std::string;
 using Transaction = std::vector<Item>;
+
 
 class Item
 {

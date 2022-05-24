@@ -11,6 +11,32 @@ FPNode::FPNode(const Item& item, const std::shared_ptr<FPNode>& parent) :
 {
 }
 
+std::list<EquivTrans> FPNode::convertToEquivTrans(Transaction S)
+{
+    std::sort(S.begin(), S.end(), [] (const Item& lhs, const Item& rhs){return lhs.myExternalUtil < rhs.myExternalUtil;});
+    float wref = 0;
+    std::list<EquivTrans> equivTransVec;
+
+    while(!S.empty())
+    {
+        float extUtil = S.front().myExternalUtil;
+        float wout = extUtil - wref;
+        wref = extUtil;
+        
+        equivTransVec.push_back(EquivTrans(S, wout));
+
+        for(Transaction::const_iterator it = S.begin(); it < S.end(); it++)
+        {
+            if((*it).myExternalUtil > wref)
+            {
+                S.erase(S.begin(), it);
+                break;
+            }
+        }        
+    }
+    return equivTransVec;
+}
+
 FPTree::FPTree(const std::vector<Transaction>& transactions, float minimum_support_threshold) :
     root( std::make_shared<FPNode>( Item("ROOT", 0, "ROOT"), nullptr ) ), header_table(),
     minimum_support_threshold( minimum_support_threshold )
@@ -24,7 +50,8 @@ FPTree::FPTree(const std::vector<Transaction>& transactions, float minimum_suppo
     }
 
     // keep only items which have a frequency greater or equal than the minimum support threshold
-    for ( auto it = iwiSupportByItem.cbegin(); it != iwiSupportByItem.cend(); ) {
+    for ( auto it = iwiSupportByItem.cbegin(); it != iwiSupportByItem.cend(); ) 
+    {
         const float itemIWISupp = (*it).second;
         if ( itemIWISupp < minimum_support_threshold ) { iwiSupportByItem.erase( it++ ); }
         else { ++it; }
@@ -51,7 +78,8 @@ FPTree::FPTree(const std::vector<Transaction>& transactions, float minimum_suppo
         auto curr_fpnode = root;
 
         // select and sort the frequent items in transaction according to the order of items_ordered_by_frequency
-        for ( const auto& pair : items_ordered_by_frequency ) {
+        for ( const auto& pair : items_ordered_by_frequency ) 
+        {
             const itemName& item = pair.first;
             //WARNING: This version skips this step: ---
             // -----> check if item is contained in the current transaction
