@@ -1,14 +1,19 @@
-#pragma once
+#ifndef __EQUIVTRANS_H__
+#define __EQUIVTRANS_H__
+
 #include <vector>
 #include "Item.hpp"
 
-class EquivTrans {
-    
-    std::vector<itemName> myItemNames;
+class EquivTrans 
+{
+public:
+    std::vector<Item> myItems;
     float myWeight;
 
-
-public:
     EquivTrans(const Transaction&, float weight);
    ~EquivTrans();
+private:
 };
+
+
+#endif // __EQUIVTRANS_H__

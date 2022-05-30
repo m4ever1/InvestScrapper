@@ -11,17 +11,16 @@
 #include <algorithm>
 #include <list>
 
-#include "Item.hpp"
 #include "EquivTrans.hpp"
 
-using TransformedPrefixPath = std::pair<std::vector<Item>, uint64_t>;
-using Pattern = std::pair<std::set<Item>, uint64_t>;
+using TransformedPrefixPath = std::pair<std::vector<Item>, float>;
+using Pattern = std::pair<std::set<Item>, float>;
 
 
 class FPNode {
 public:
     const Item item;
-    uint64_t frequency;
+    float frequency;
     std::shared_ptr<FPNode> node_link;
     std::weak_ptr<FPNode> parent;
     std::vector<std::shared_ptr<FPNode>> children;
@@ -33,12 +32,12 @@ public:
 
 class FPTree {
 public:
-    const Item item;
+
     std::shared_ptr<FPNode> root;
     std::map<Item, std::shared_ptr<FPNode>> header_table;
-    uint64_t minimum_support_threshold;
+    float minimum_support_threshold;
 
-    FPTree(const std::vector<Transaction>&, float);
+    FPTree(const std::vector<Transaction>&, const float&);
 
     bool empty() const;
 };
