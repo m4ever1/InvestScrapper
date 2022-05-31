@@ -25,7 +25,7 @@ public:
     std::weak_ptr<FPNode> parent;
     std::vector<std::shared_ptr<FPNode>> children;
 
-    FPNode(const Item&, const std::shared_ptr<FPNode>&);
+    FPNode(const Item&, const std::shared_ptr<FPNode>&, const float);
 
     static std::list<EquivTrans> convertToEquivTrans(Transaction trans);
 };
@@ -41,9 +41,6 @@ public:
 
     bool empty() const;
 };
-
-
-std::set<Pattern> fptree_growth(const FPTree&);
 
 
 #endif  // FPTREE_HPP

@@ -5,19 +5,41 @@
 
 #include "fptree.hpp"
 
+const float IWISupport(std::set<Pattern>& itemset)
+{
+    for(const Pattern& pat : itemset)
+    {
+        
+    }
+}
 
-FPNode::FPNode(const Item& item, const std::shared_ptr<FPNode>& parent) :
-    item( item ), frequency( 1 ), node_link( nullptr ), parent( parent ), children()
+std::set<Pattern> getUnionWithHeaderEntry(const std::set<Pattern>& prefix, const std::pair<const Item, std::shared_ptr<FPNode>>& i)
+{
+    
+    std::set<Pattern> result = prefix;
+    std::set<Item> convertedToSet = {i.first};
+    Pattern toInsert = std::make_pair(convertedToSet, i.second->frequency);
+    result.insert(toInsert);
+    return result;
+}
+
+
+
+FPNode::FPNode(const Item& item, const std::shared_ptr<FPNode>& parent, const float weight) :
+    item( item ), frequency( weight ), node_link( nullptr ), parent( parent ), children()
 {
 }
 
 std::list<EquivTrans> FPNode::convertToEquivTrans(Transaction S)
 {
     std::sort(S.begin(), S.end(), [] (const Item& lhs, const Item& rhs){return lhs.myExternalUtil < rhs.myExternalUtil;});
+    Transaction copyOfS = S;
+    int p = std::unique(copyOfS.begin(), copyOfS.end(), 
+            [] (const Item& lhs, const Item& rhs){return lhs.myExternalUtil == rhs.myExternalUtil;}) - copyOfS.begin();
     float wref = 0;
     std::list<EquivTrans> equivTransVec;
 
-    while(!S.empty())
+    while(equivTransVec.size() != p)
     {
         float extUtil = S.front().myExternalUtil;
         float wout = extUtil - wref;
@@ -32,13 +54,13 @@ std::list<EquivTrans> FPNode::convertToEquivTrans(Transaction S)
                 S.erase(S.begin(), it);
                 break;
             }
-        }        
+        } 
     }
     return equivTransVec;
 }
 
 FPTree::FPTree(const std::vector<Transaction>& transactions, const float& minimum_support_threshold_in) :
-    root( std::make_shared<FPNode>( Item("ROOT", (float) 0, "ROOT"), nullptr ) ), header_table(),
+    root( std::make_shared<FPNode>( Item("ROOT", (float) 0, "ROOT"), nullptr, 0 ) ), header_table(),
     minimum_support_threshold( minimum_support_threshold_in )
 {
     // scan the transactions counting the frequency of each item
@@ -99,7 +121,7 @@ FPTree::FPTree(const std::vector<Transaction>& transactions, const float& minimu
                     if ( it == curr_fpnode->children.cend() ) 
                     {
                         // the child doesn't exist, create a new node
-                        const auto curr_fpnode_new_child = std::make_shared<FPNode>( item, curr_fpnode );
+                        const auto curr_fpnode_new_child = std::make_shared<FPNode>( item, curr_fpnode, weight );
 
                         // add the new node to the tree
                         curr_fpnode->children.push_back( curr_fpnode_new_child );
@@ -156,7 +178,7 @@ bool contains_single_path(const FPTree& fptree)
     return fptree.empty() || contains_single_path( fptree.root );
 }
 
-std::set<Pattern> fptree_growth(const FPTree& fptree)
+std::set<Pattern> IWIMining(const FPTree& fptree, const float& minSup, const std::set<Pattern>& prefix)
 {
     if ( fptree.empty() ) { return {}; }
 
@@ -197,98 +219,105 @@ std::set<Pattern> fptree_growth(const FPTree& fptree)
     // else {
     //     // generate conditional fptrees for each different item in the fptree, then join the results
 
-    std::set<Pattern> multi_path_patterns;
+    std::set<Pattern> I;
 
         // for each item in the fptree
     for ( const auto& pair : fptree.header_table ) 
     {
         const Item& curr_item = pair.first;
 
-        // build the conditional fptree relative to the current item
+        std::set<Pattern> I = getUnionWithHeaderEntry(prefix, pair);
 
-        // start by generating the conditional pattern base
-        std::vector<TransformedPrefixPath> conditional_pattern_base;
-
-        // for each path in the header_table (relative to the current item)
-        auto path_starting_fpnode = pair.second;
-        while ( path_starting_fpnode )
+        if (I.)
         {
-            // construct the transformed prefix path
-
-            // each item in the transformed prefix path has the same frequency (the frequency of path_starting_fpnode)
-            const uint64_t path_starting_fpnode_frequency = path_starting_fpnode->frequency;
-
-            auto curr_path_fpnode = path_starting_fpnode->parent.lock();
-            // check if curr_path_fpnode is already the root of the fptree
-            if ( curr_path_fpnode->parent.lock() ) {
-                // the path has at least one node (excluding the starting node and the root)
-                TransformedPrefixPath transformed_prefix_path{ {}, path_starting_fpnode_frequency };
-
-                while ( curr_path_fpnode->parent.lock() ) 
-                {
-                    assert( curr_path_fpnode->frequency >= path_starting_fpnode_frequency );
-                    transformed_prefix_path.first.push_back( curr_path_fpnode->item );
-
-                    // advance to the next node in the path
-                    curr_path_fpnode = curr_path_fpnode->parent.lock();
-                }
-
-                conditional_pattern_base.push_back( transformed_prefix_path );
-            }
-
-            // advance to the next path
-            path_starting_fpnode = path_starting_fpnode->node_link;
+            /* code */
         }
+        
+    //     // build the conditional fptree relative to the current item
 
-        // generate the transactions that represent the conditional pattern base
-        std::vector<Transaction> conditional_fptree_transactions;
-        for ( const TransformedPrefixPath& transformed_prefix_path : conditional_pattern_base ) 
-        {
-            const std::vector<Item>& transformed_prefix_path_items = transformed_prefix_path.first;
-            const float transformed_prefix_path_items_frequency = transformed_prefix_path.second;
+    //     // start by generating the conditional pattern base
+    //     std::vector<TransformedPrefixPath> conditional_pattern_base;
 
-            Transaction transaction = transformed_prefix_path_items;
+    //     // for each path in the header_table (relative to the current item)
+    //     auto path_starting_fpnode = pair.second;
+    //     while ( path_starting_fpnode )
+    //     {
+    //         // construct the transformed prefix path
 
-            // add the same transaction transformed_prefix_path_items_frequency times
-            for ( auto i = 0; i < transformed_prefix_path_items_frequency; ++i ) {
-                conditional_fptree_transactions.push_back( transaction );
-            }
-        }
+    //         // each item in the transformed prefix path has the same frequency (the frequency of path_starting_fpnode)
+    //         const float path_starting_fpnode_frequency = path_starting_fpnode->frequency;
 
-        // build the conditional fptree relative to the current item with the transactions just generated
-        const FPTree conditional_fptree( conditional_fptree_transactions, fptree.minimum_support_threshold );
-        // call recursively fptree_growth on the conditional fptree (empty fptree: no patterns)
-        std::set<Pattern> conditional_patterns = fptree_growth( conditional_fptree );
+    //         auto curr_path_fpnode = path_starting_fpnode->parent.lock();
+    //         // check if curr_path_fpnode is already the root of the fptree
+    //         if ( curr_path_fpnode->parent.lock() ) {
+    //             // the path has at least one node (excluding the starting node and the root)
+    //             TransformedPrefixPath transformed_prefix_path{ {}, path_starting_fpnode_frequency };
 
-        // construct patterns relative to the current item using both the current item and the conditional patterns
-        std::set<Pattern> curr_item_patterns;
+    //             while ( curr_path_fpnode->parent.lock() ) 
+    //             {
+    //                 assert( curr_path_fpnode->frequency >= path_starting_fpnode_frequency );
+    //                 transformed_prefix_path.first.push_back( curr_path_fpnode->item );
 
-        // the first pattern is made only by the current item
-        // compute the frequency of this pattern by summing the frequency of the nodes which have the same item (follow the node links)
-        float curr_item_frequency = 0;
-        auto fpnode = pair.second;
-        while ( fpnode ) {
-            curr_item_frequency += fpnode->frequency;
-            fpnode = fpnode->node_link;
-        }
-        // add the pattern as a result
-        Pattern pattern{ { curr_item }, curr_item_frequency };
-        curr_item_patterns.insert( pattern );
+    //                 // advance to the next node in the path
+    //                 curr_path_fpnode = curr_path_fpnode->parent.lock();
+    //             }
 
-        // the next patterns are generated by adding the current item to each conditional pattern
-        for ( const Pattern& pattern : conditional_patterns ) {
-            Pattern new_pattern{ pattern };
-            new_pattern.first.insert( curr_item );
-            assert( curr_item_frequency >= pattern.second );
-            new_pattern.second = pattern.second;
+    //             conditional_pattern_base.push_back( transformed_prefix_path );
+    //         }
 
-            curr_item_patterns.insert( { new_pattern } );
-        }
+    //         // advance to the next path
+    //         path_starting_fpnode = path_starting_fpnode->node_link;
+    //     }
 
-        // join the patterns generated by the current item with all the other items of the fptree
-        multi_path_patterns.insert( curr_item_patterns.cbegin(), curr_item_patterns.cend() );
-    }
+    //     // generate the transactions that represent the conditional pattern base
+    //     std::vector<Transaction> conditional_fptree_transactions;
+    //     for ( const TransformedPrefixPath& transformed_prefix_path : conditional_pattern_base ) 
+    //     {
+    //         const std::vector<Item>& transformed_prefix_path_items = transformed_prefix_path.first;
+    //         const float transformed_prefix_path_items_frequency = transformed_prefix_path.second;
 
-    return multi_path_patterns;
+    //         Transaction transaction = transformed_prefix_path_items;
+
+    //         // add the same transaction transformed_prefix_path_items_frequency times
+    //         for ( auto i = 0; i < transformed_prefix_path_items_frequency; ++i ) {
+    //             conditional_fptree_transactions.push_back( transaction );
+    //         }
+    //     }
+
+    //     // build the conditional fptree relative to the current item with the transactions just generated
+    //     const FPTree conditional_fptree( conditional_fptree_transactions, fptree.minimum_support_threshold );
+    //     // call recursively fptree_growth on the conditional fptree (empty fptree: no patterns)
+    //     std::set<Pattern> conditional_patterns = fptree_growth( conditional_fptree );
+
+    //     // construct patterns relative to the current item using both the current item and the conditional patterns
+    //     std::set<Pattern> curr_item_patterns;
+
+    //     // the first pattern is made only by the current item
+    //     // compute the frequency of this pattern by summing the frequency of the nodes which have the same item (follow the node links)
+    //     float curr_item_frequency = 0;
+    //     auto fpnode = pair.second;
+    //     while ( fpnode ) {
+    //         curr_item_frequency += fpnode->frequency;
+    //         fpnode = fpnode->node_link;
+    //     }
+    //     // add the pattern as a result
+    //     Pattern pattern{ { curr_item }, curr_item_frequency };
+    //     curr_item_patterns.insert( pattern );
+
+    //     // the next patterns are generated by adding the current item to each conditional pattern
+    //     for ( const Pattern& pattern : conditional_patterns ) {
+    //         Pattern new_pattern{ pattern };
+    //         new_pattern.first.insert( curr_item );
+    //         // assert( curr_item_frequency >= pattern.second );
+    //         new_pattern.second = pattern.second;
+
+    //         curr_item_patterns.insert( { new_pattern } );
+    //     }
+
+    //     // join the patterns generated by the current item with all the other items of the fptree
+    //     multi_path_patterns.insert( curr_item_patterns.cbegin(), curr_item_patterns.cend() );
     // }
+
+    // return multi_path_patterns;
+    }
 }

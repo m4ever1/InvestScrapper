@@ -9,6 +9,11 @@ mySector(sector)
 {
 }
 
+const std::string Item::toString() const
+{
+   return std::string("TODO");
+}
+
 Item::~Item()
 {
 }
@@ -16,4 +21,9 @@ Item::~Item()
 bool Item::operator<(const Item& i2) const
 {
    return this->myName < i2.myName;
+}
+
+bool Item::operator==(const Item& i2) const
+{
+   return this->myName == i2.myName;
 }

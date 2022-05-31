@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <string>
+#include <vector>
 
 class Item;
 
@@ -20,8 +21,9 @@ public:
     float myExternalUtil;
     std::string mySector;
     Item(std::string name, float extUtil, std::string sector);
-    std::string toString();
+    const std::string toString() const;
     bool operator<(const Item& i2) const;
+    bool operator==(const Item& i2) const;
     ~Item();
 };
 
