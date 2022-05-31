@@ -45,11 +45,13 @@ void test_1()
         { a6, b6, c6, d6 }
     };
 
-    const uint64_t minimum_support_threshold = 180;
+    const float minimum_support_threshold = 180;
 
     const FPTree fptree{ transactions, minimum_support_threshold };
 
-    const std::set<Pattern> patterns = IWIMining( fptree );
+    const std::set<Pattern> prefix;
+
+    const std::set<Pattern> patterns = IWIMining( fptree, minimum_support_threshold,  prefix);
 
     for(const auto& setfloat : patterns)
     {

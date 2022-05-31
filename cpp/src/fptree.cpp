@@ -2,15 +2,21 @@
 #include <cassert>
 #include <cstdint>
 #include <utility>
+#include <limits>
 
 #include "fptree.hpp"
 
 const float IWISupport(std::set<Pattern>& itemset)
 {
+    float IWI = std::numeric_limits<float>::max();
     for(const Pattern& pat : itemset)
     {
-        
+        if (pat.second < IWI)
+        {
+            IWI = pat.second;
+        }        
     }
+    return IWI;
 }
 
 std::set<Pattern> getUnionWithHeaderEntry(const std::set<Pattern>& prefix, const std::pair<const Item, std::shared_ptr<FPNode>>& i)
@@ -219,6 +225,7 @@ std::set<Pattern> IWIMining(const FPTree& fptree, const float& minSup, const std
     // else {
     //     // generate conditional fptrees for each different item in the fptree, then join the results
 
+    std::set<Pattern> F;
     std::set<Pattern> I;
 
         // for each item in the fptree
@@ -228,9 +235,9 @@ std::set<Pattern> IWIMining(const FPTree& fptree, const float& minSup, const std
 
         std::set<Pattern> I = getUnionWithHeaderEntry(prefix, pair);
 
-        if (I.)
+        if (IWISupport(I) <= minSup)
         {
-            /* code */
+            F.merge(I);
         }
         
     //     // build the conditional fptree relative to the current item

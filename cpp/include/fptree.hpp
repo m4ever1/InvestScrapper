@@ -13,10 +13,14 @@
 
 #include "EquivTrans.hpp"
 
+class FPTree;
+
 using TransformedPrefixPath = std::pair<std::vector<Item>, float>;
 using Pattern = std::pair<std::set<Item>, float>;
 
+std::set<Pattern> IWIMining(const FPTree& fptree, const float& minSup, const std::set<Pattern>& prefix);
 
+const float IWISupport(std::set<Pattern>& itemset);
 class FPNode {
 public:
     const Item item;
