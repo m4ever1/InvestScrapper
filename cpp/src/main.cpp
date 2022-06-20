@@ -47,7 +47,7 @@ void test_1()
 
     const float minimum_support_threshold = 180;
 
-    const FPTree fptree{ transactions, minimum_support_threshold };
+    const FPTree fptree(transactions, minimum_support_threshold, true);
 
     const std::set<Pattern> prefix;
 
