@@ -45,6 +45,8 @@ public:
     FPTree(const std::vector<Transaction>&, const float&);
 
     bool empty() const;
+private:
+    void init();
 };
 
 
