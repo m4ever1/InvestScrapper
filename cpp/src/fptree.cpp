@@ -65,19 +65,16 @@ std::list<EquivTrans> FPNode::convertToEquivTrans(Transaction S)
     return equivTransVec;
 }
 
-FPTree::FPTree(const std::vector<Transaction>& transactions, const float& minimum_support_threshold) :
+FPTree::FPTree(std::vector<EquivTrans>& transactions, const float& minimum_support_threshold) :
     root( std::make_shared<FPNode>( Item("ROOT", (float) 0, "ROOT"), nullptr, 0 ) ), header_table(),
     minimum_support_threshold( minimum_support_threshold )
 {
     // scan the transactions counting the frequency of each item
-    std::map<Item, float> iwiSupportByItem;
-    for ( const Transaction& transaction : transactions ) 
-    {
-        for ( const Item& item : transaction ) 
-        {
-            iwiSupportByItem[item] += item.myExternalUtil;
-        }
-    }
+
+    // order items by decreasing frequency
+
+    std::sort(transactions.begin(), transactions.end(), 
+    [] (const EquivTrans& lhs, const EquivTrans& rhs){return lhs.myWeight < rhs.myWeight;});
 
     // keep only items which have a frequency greater or equal than the minimum support threshold
     // for ( auto it = iwiSupportByItem.cbegin(); it != iwiSupportByItem.cend(); ) 
@@ -87,36 +84,22 @@ FPTree::FPTree(const std::vector<Transaction>& transactions, const float& minimu
     //     else { ++it; }
     // }
 
-    // order items by decreasing frequency
-    struct iwiSupportComparator
-    {
-        bool operator()(const std::pair<Item, float> &lhs, const std::pair<Item, float> &rhs) const
-        {
-            // 1st: compare the float values of each pair, return true if lhs is greater than rhs
-            // if lhs is the same nr as rhs, compare the strings lexicographically, and return
-            // true if lhs' string is lexicographcally greater than rhs'
-            return std::tie(lhs.second, lhs.first.myName) > std::tie(rhs.second, rhs.first.myName);
-        }
-    };
-    std::set<std::pair<Item, float>, iwiSupportComparator> itemsOrderedByIwi(iwiSupportByItem.cbegin(), iwiSupportByItem.cend());
 
     // start tree construction
 
     // scan the transactions again
-    for ( const Transaction& transaction : transactions ) 
+    for ( const EquivTrans& transaction : transactions ) 
     {
         auto curr_fpnode = root;
         // select and sort the frequent items in transaction according to the order of items_ordered_by_frequency
+        const float& weight = transaction.myWeight;
 
-        for(const auto& pair : itemsOrderedByIwi)
+        for(const auto& pair : transaction.myItems)
         {
-
+            const Item& item = pair;
             // check if item is contained in the current transaction
-            auto found_item = std::find( transaction.begin(), transaction.end(), pair.first );
-            if ( found_item != transaction.end() ) 
+            if (true) 
             {
-                const Item& item = *found_item;
-                const float& weight = item.myExternalUtil;
                 // insert item in the tree
 
                 // check if curr_fpnode has a child curr_fpnode_child such that curr_fpnode_child.item = item
@@ -127,7 +110,7 @@ FPTree::FPTree(const std::vector<Transaction>& transactions, const float& minimu
                 if ( it == curr_fpnode->children.cend() ) 
                 {
                     // the child doesn't exist, create a new node
-                    const auto curr_fpnode_new_child = std::make_shared<FPNode>( item, curr_fpnode, weight );
+                    const auto curr_fpnode_new_child = std::make_shared<FPNode>( item, curr_fpnode, 1 );
 
                     // add the new node to the tree
                     curr_fpnode->children.push_back( curr_fpnode_new_child );
@@ -154,7 +137,7 @@ FPTree::FPTree(const std::vector<Transaction>& transactions, const float& minimu
                 {
                     // the child exist, increment its frequency
                     auto curr_fpnode_child = *it;
-                    curr_fpnode_child->frequency += weight;
+                    curr_fpnode_child->frequency++;
 
                     // advance to the next node of the current transaction
                     curr_fpnode = curr_fpnode_child;
@@ -194,7 +177,7 @@ FPTree::FPTree(const std::vector<Transaction>& transactions, const float& minimu
             // 1st: compare the float values of each pair, return true if lhs is greater than rhs
             // if lhs is the same nr as rhs, compare the strings lexicographically, and return
             // true if lhs' string is lexicographcally greater than rhs'
-            return std::tie(lhs.second, lhs.first.myName) > std::tie(rhs.second, rhs.first.myName);
+            return std::tie(lhs.second, lhs.first.myName) < std::tie(rhs.second, rhs.first.myName);
         }
     };
     std::set<std::pair<Item, float>, iwiSupportComparator> itemsOrderedByIwi(iwiSupportByItem.cbegin(), iwiSupportByItem.cend());
@@ -328,7 +311,7 @@ std::set<Pattern> IWIMining(const FPTree& fptree, const float& minSup, const std
     //     // generate conditional fptrees for each different item in the fptree, then join the results
 
     std::set<Pattern> F;
-    // std::set<Pattern> I;
+    std::set<Pattern> I;
 
         // for each item in the fptree
     for ( const auto& pair : fptree.header_table ) 
@@ -380,7 +363,7 @@ std::set<Pattern> IWIMining(const FPTree& fptree, const float& minSup, const std
         }
 
         // generate the transactions that represent the conditional pattern base
-        std::vector<Transaction> conditional_fptree_transactions;
+        std::vector<EquivTrans> conditional_fptree_transactions;
         for ( const TransformedPrefixPath& transformed_prefix_path : conditional_pattern_base ) 
         {
             const std::vector<Item>& transformed_prefix_path_items = transformed_prefix_path.first;
@@ -388,9 +371,11 @@ std::set<Pattern> IWIMining(const FPTree& fptree, const float& minSup, const std
 
             Transaction transaction = transformed_prefix_path_items;
 
+            EquivTrans equivTrans(transaction, transformed_prefix_path_items_frequency);
+
             // add the same transaction transformed_prefix_path_items_frequency times
             for ( auto i = 0; i < transformed_prefix_path_items_frequency; ++i ) {
-                conditional_fptree_transactions.push_back( transaction );
+                conditional_fptree_transactions.push_back( equivTrans );
             }
         }
 

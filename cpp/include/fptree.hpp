@@ -42,7 +42,7 @@ public:
     float minimum_support_threshold;
 
     FPTree(const std::vector<Transaction>&, const float&, const bool);
-    FPTree(const std::vector<Transaction>&, const float&);
+    FPTree(std::vector<EquivTrans>&, const float&);
 
     bool empty() const;
 private:
