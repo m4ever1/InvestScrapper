@@ -3,6 +3,7 @@
 #include "InputParser.hpp"
 #include <set>
 #include "fptree.hpp"
+#include "Utils.hpp"
 
 void test_1()
 {
@@ -47,11 +48,14 @@ void test_1()
 
     const float minimum_support_threshold = 180;
 
-    const FPTree fptree(transactions, minimum_support_threshold, true);
+    Utils utils(transactions, minimum_support_threshold);
+    const std::map<Item, float> iwiSupportByItem = utils.getIwiSupportByItem();
+
+    const FPTree fptree(transactions, minimum_support_threshold, iwiSupportByItem);
 
     const std::set<Pattern> prefix;
 
-    const std::set<Pattern> patterns = IWIMining( fptree, minimum_support_threshold,  prefix);
+    const std::set<Pattern> patterns = utils.IWIMining( fptree, minimum_support_threshold, prefix);
 
     for(const auto& setfloat : patterns)
     {

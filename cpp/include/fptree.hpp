@@ -18,7 +18,7 @@ class FPTree;
 using TransformedPrefixPath = std::pair<std::vector<Item>, float>;
 using Pattern = std::pair<std::set<Item>, float>;
 
-std::set<Pattern> IWIMining(const FPTree& fptree, const float& minSup, const std::set<Pattern>& prefix);
+
 
 const float IWISupport(std::set<Pattern>& itemset);
 class FPNode {
@@ -41,11 +41,12 @@ public:
     std::map<Item, std::shared_ptr<FPNode>> header_table;
     float minimum_support_threshold;
 
-    FPTree(const std::vector<Transaction>&, const float&, const bool);
+    FPTree(const std::vector<Transaction>&, const float&, const std::map<Item, float>& iwiSupportByItem);
     FPTree(std::vector<EquivTrans>&, const float&);
 
     bool empty() const;
 private:
+
     void init();
 };
 
