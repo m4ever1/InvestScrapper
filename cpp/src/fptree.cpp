@@ -3,6 +3,7 @@
 #include <cassert>
 #include <utility>
 #include "fptree.hpp"
+#include "Utils.hpp"
 
 FPNode::FPNode(const Item& item, const std::shared_ptr<FPNode>& parent, const float weight) :
     item( item ), frequency( weight ), node_link( nullptr ), parent( parent ), children()
@@ -83,7 +84,7 @@ FPTree::FPTree(std::vector<EquivTrans>& transactions, const float& minimum_suppo
                 if ( it == curr_fpnode->children.cend() ) 
                 {
                     // the child doesn't exist, create a new node
-                    const auto curr_fpnode_new_child = std::make_shared<FPNode>( item, curr_fpnode, 1 );
+                    const auto curr_fpnode_new_child = std::make_shared<FPNode>( item, curr_fpnode, weight );
 
                     // add the new node to the tree
                     curr_fpnode->children.push_back( curr_fpnode_new_child );
@@ -110,7 +111,7 @@ FPTree::FPTree(std::vector<EquivTrans>& transactions, const float& minimum_suppo
                 {
                     // the child exist, increment its frequency
                     auto curr_fpnode_child = *it;
-                    curr_fpnode_child->frequency++;
+                    curr_fpnode_child->frequency+= weight;
 
                     // advance to the next node of the current transaction
                     curr_fpnode = curr_fpnode_child;
@@ -152,7 +153,7 @@ FPTree::FPTree(const std::vector<Transaction>& transactions, const float& minimu
     for ( const Transaction& transaction : transactions ) 
     {
         std::list<EquivTrans> listOfEquivTrans = FPNode::convertToEquivTrans(transaction);
-
+        Utils::printEquivTrans(listOfEquivTrans);
         // select and sort the frequent items in transaction according to the order of items_ordered_by_frequency
         for ( const auto& equivTransaction : listOfEquivTrans ) 
         {
@@ -221,16 +222,6 @@ bool FPTree::empty() const
 }
 
 
-bool contains_single_path(const std::shared_ptr<FPNode>& fpnode)
-{
-    assert( fpnode );
-    if ( fpnode->children.size() == 0 ) { return true; }
-    if ( fpnode->children.size() > 1 ) { return false; }
-    return contains_single_path( fpnode->children.front() );
-}
-bool contains_single_path(const FPTree& fptree)
-{
-    return fptree.empty() || contains_single_path( fptree.root );
-}
+
 
 
