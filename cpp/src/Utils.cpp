@@ -131,7 +131,7 @@ std::set<Pattern> Utils::IWIMining(const FPTree& fptree, const float& minSup, co
 
                 while ( curr_path_fpnode->parent.lock() ) 
                 {
-                    assert( curr_path_fpnode->frequency >= path_starting_fpnode_frequency );
+                    // assert( curr_path_fpnode->frequency >= path_starting_fpnode_frequency );
                     transformed_prefix_path.first.push_back( curr_path_fpnode->item );
 
                     // advance to the next node in the path
@@ -163,12 +163,16 @@ std::set<Pattern> Utils::IWIMining(const FPTree& fptree, const float& minSup, co
         }
 
         // build the conditional fptree relative to the current item with the transactions just generated
-        const FPTree conditional_fptree( conditional_fptree_transactions, fptree.minimum_support_threshold );
+        FPTree conditional_fptree( conditional_fptree_transactions, fptree.minimum_support_threshold );
         // call recursively fptree_growth on the conditional fptree (empty fptree: no patterns)
-        
+        // std::cout << "===================== BEFORE =====================" << std::endl;
+        // conditional_fptree.printTree();
+        conditional_fptree.pruneItems();
+        // std::cout << "===================== AFTER =====================" << std::endl;
+        // conditional_fptree.printTree();
         // if (!conditional_fptree.empty())
         // {
-        std::set<Pattern> conditional_patterns = IWIMining(conditional_fptree, minSup, I);
+       std::set<Pattern> conditional_patterns = IWIMining(conditional_fptree, minSup, I);
         // }
         
 
@@ -186,7 +190,7 @@ std::set<Pattern> Utils::IWIMining(const FPTree& fptree, const float& minSup, co
             fpnode = fpnode->node_link;
         }
         // add the pattern as a result
-        if (curr_item_frequency <= minSup)
+        if (curr_item_frequency >= minSup)
         {
             Pattern pattern{ { curr_item }, curr_item_frequency };
             curr_item_patterns.insert( pattern );

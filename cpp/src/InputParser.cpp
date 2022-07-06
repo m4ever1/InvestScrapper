@@ -20,7 +20,7 @@ bool InputParser::buildTransactionsVector(std::vector<std::vector<Item>>& vector
         {
             std::vector<Item> itemVectorEntry;
             std::vector<std::string> result;
-            //NAMES:PROFITS:SECTORS\n
+            //NAMES:SECTORS:PROFITS\n
             boost::split(result, line, boost::is_any_of(DELIMITER));
             if(result.size() > 3)
             {
@@ -31,8 +31,8 @@ bool InputParser::buildTransactionsVector(std::vector<std::vector<Item>>& vector
             std::vector<std::string> utils;
             std::vector<std::string> sectors;
             boost::split(names, result[0], boost::is_any_of(" "));
-            boost::split(utils, result[1], boost::is_any_of(" "));
-            boost::split(sectors, result[2], boost::is_any_of(" "));
+            boost::split(sectors, result[1], boost::is_any_of(" "));
+            boost::split(utils, result[2], boost::is_any_of(" "));
             for(long unsigned int i = 0; i < names.size(); i++)
             {
                 Item itemToInsert(names[i], std::stof(utils[i]), sectors[i]);

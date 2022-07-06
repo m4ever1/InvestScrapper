@@ -40,13 +40,16 @@ public:
     std::shared_ptr<FPNode> root;
     std::map<Item, std::shared_ptr<FPNode>> header_table;
     float minimum_support_threshold;
-
+    std::set<Item> itemsToKeep;
     FPTree(const std::vector<Transaction>&, const float&, const std::map<Item, float>& iwiSupportByItem);
     FPTree(std::vector<EquivTrans>&, const float&);
-
+    void printTree();
+    void pruneItems();
     bool empty() const;
 private:
-
+    void DFS_prune(std::vector<Item>,const std::shared_ptr<FPNode>&);
+    void BFS_print(const std::shared_ptr<FPNode>&, int level, std::map<int, std::string>& printOuts);
+    void removeNode(const std::shared_ptr<FPNode>& nodeToRemove);
     void init();
 };
 

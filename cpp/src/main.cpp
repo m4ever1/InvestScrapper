@@ -46,7 +46,7 @@ void test_1()
         { a6, b6, c6, d6 }
     };
 
-    const float minimum_support_threshold = 180;
+    const float minimum_support_threshold = 300;
 
     Utils utils(transactions, minimum_support_threshold);
     const std::map<Item, float> iwiSupportByItem = utils.getIwiSupportByItem();
@@ -115,12 +115,31 @@ int main()
     std::cout << "starting test" << std::endl;
     
     test_1();
-    // InputParser myInputParser("input.txt");
+    // InputParser myInputParser("/mnt/c/Users/mviegas/Documents/tese/InvestScrapper/input.txt");
     
-    // std::vector<std::vector<Item>> transactionsVector;
+    // std::vector<Transaction> transactionsVector;
 
     // myInputParser.buildTransactionsVector(transactionsVector);
 
+    // const float minimum_support_threshold = 0;
+
+    // Utils utils(transactionsVector, minimum_support_threshold);
+    // const std::map<Item, float> iwiSupportByItem = utils.getIwiSupportByItem();
+
+    // const FPTree fptree(transactionsVector, minimum_support_threshold, iwiSupportByItem);
+
+    // const std::set<Pattern> prefix;
+
+    // const std::set<Pattern> patterns = utils.IWIMining( fptree, minimum_support_threshold, prefix);
+
+    // for(const auto& setfloat : patterns)
+    // {
+    //     for(const auto& item : setfloat.first)
+    //     {
+    //         std::cout << item.myName << " ";
+    //     }
+    //     std::cout << ": " << setfloat.second << std::endl;
+    // }
 
     return 0;
 }
