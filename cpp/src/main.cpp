@@ -112,34 +112,36 @@ void printTransactions(const std::vector<std::vector<Item>>& transactionsVector)
 
 int main()
 {
-    std::cout << "starting test" << std::endl;
+    // std::cout << "starting test" << std::endl;
     
-    test_1();
-    // InputParser myInputParser("/mnt/c/Users/mviegas/Documents/tese/InvestScrapper/input.txt");
+    // test_1();
+    InputParser myInputParser("/home/miguel/InvestScrapper/input.txt");
     
-    // std::vector<Transaction> transactionsVector;
+    std::vector<Transaction> transactionsVector;
 
-    // myInputParser.buildTransactionsVector(transactionsVector);
+    myInputParser.buildTransactionsVector(transactionsVector);
 
-    // const float minimum_support_threshold = 0;
+    const float min_average = 15;
 
-    // Utils utils(transactionsVector, minimum_support_threshold);
-    // const std::map<Item, float> iwiSupportByItem = utils.getIwiSupportByItem();
+    const float minimum_support_threshold = min_average*transactionsVector.size();
 
-    // const FPTree fptree(transactionsVector, minimum_support_threshold, iwiSupportByItem);
+    Utils utils(transactionsVector, minimum_support_threshold);
+    const std::map<Item, float> iwiSupportByItem = utils.getIwiSupportByItem();
 
-    // const std::set<Pattern> prefix;
+    const FPTree fptree(transactionsVector, minimum_support_threshold, iwiSupportByItem);
 
-    // const std::set<Pattern> patterns = utils.IWIMining( fptree, minimum_support_threshold, prefix);
+    const std::set<Pattern> prefix;
 
-    // for(const auto& setfloat : patterns)
-    // {
-    //     for(const auto& item : setfloat.first)
-    //     {
-    //         std::cout << item.myName << " ";
-    //     }
-    //     std::cout << ": " << setfloat.second << std::endl;
-    // }
+    const std::set<Pattern> patterns = utils.IWIMining( fptree, minimum_support_threshold, prefix);
+
+    for(const auto& setfloat : patterns)
+    {
+        for(const auto& item : setfloat.first)
+        {
+            std::cout << item.myName << " ";
+        }
+        std::cout << ": " << setfloat.second/transactionsVector.size() << std::endl;
+    }
 
     return 0;
 }

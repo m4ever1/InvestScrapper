@@ -8,7 +8,7 @@ import numpy as np
 from collections import defaultdict
 from itemset_mining.two_phase_huim import TwoPhase
 import random
-from spmf import Spmf
+# from spmf import Spmf
 import re
 
 
@@ -150,6 +150,7 @@ for stck in list(sectors_dict.values()):
     stock_name = stck[0]
     stocksToTransact.append(stock_name)
 
+# ISSUE HERE -> transactions loses track of stock tickers when copying over column headers
 transactions = pctChangeDf[pctChangeDf.columns[pctChangeDf.columns.isin(stocksToTransact)]]
 # transactions = transactions.clip(0)
 # transactions = transactions.round(0).astype(int)
@@ -158,8 +159,8 @@ transactions = pctChangeDf[pctChangeDf.columns[pctChangeDf.columns.isin(stocksTo
 # listOfTransLists = [[(tick, transactions.iloc[i][j]) for j, tick in enumerate(transactions.columns) if transactions.iloc[i][j] != 0] for i in range(len(transactions.index)) if  1 < i < 4]
 
 # listOfTransLists = [(column, random.randint(1,10)) for column in transactions.columns[0:6]]
-transactions.columns = range(1, len(transactions.columns) + 1)
-transactions = transactions.multiply(10).astype('int')
+# transactions.columns = range(1, len(transactions.columns) + 1)
+# transactions = transactions.multiply(10).astype('int')
 # whitespace_remover(transactions)
 # listOfTransLists = [f"{' '.join(map(str, range(1, len(transactions.columns) + 1)))}:{transactions.iloc[i].sum()}:{np.array2string(transactions.iloc[i].values, max_line_width=float('inf'), floatmode='fixed', sign='-')[1:-1]}" for i in range(len(transactions.index))]
 
@@ -167,6 +168,7 @@ transactions = transactions.multiply(10).astype('int')
 stockToSector = {stock: index for index, tuple in enumerate(sectors_dict.items()) for stock in tuple[1]}
 
 # listOfTransLists = '\r\n'.join(f"{' '.join(map(str, range(1, len(transactions.columns) + 1)))}:{transactions.iloc[i].sum()}:{np.array2string(transactions.iloc[i].values, max_line_width=float('inf'), floatmode='fixed', sign='-')[1:-1].strip()}" for i in range(len(transactions.index)))
+
 listOfTransLists = '\r\n'.join(f"{' '.join(map(str, transactions.columns))}:{' '.join(map(str, [stockToSector[index] for index in transactions.iloc[i].index]))}:{np.array2string(transactions.iloc[i].values, max_line_width=float('inf'), floatmode='fixed', sign='-')[1:-1].strip()}" for i in range(len(transactions.index)))
 listOfTransLists = re.sub("  +", " ", listOfTransLists)
 
