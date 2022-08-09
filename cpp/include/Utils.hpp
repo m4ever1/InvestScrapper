@@ -5,7 +5,7 @@
 #include "fptree.hpp"
 #include <limits>
 #include <cassert>
-
+#include <unordered_set>
 
 
 class Utils {
@@ -17,6 +17,7 @@ public:
     std::set<Pattern> IWIMining(const FPTree& fptree, const float& minSup, const std::set<Pattern>& prefix);
     const std::map<Item, float>& getIwiSupportByItem();
     static void printEquivTrans(const std::list<EquivTrans>&);
+    const float calcDiversification(std::set<Item>);
 private:
     const std::vector<Transaction>& transactions;
     const float& minSup;

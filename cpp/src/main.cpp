@@ -138,9 +138,9 @@ int main()
     {
         for(const auto& item : setfloat.first)
         {
-            std::cout << item.myName << " ";
+            std::cout << item.myName << " s=" << item.mySector << "|";
         }
-        std::cout << ": " << setfloat.second/transactionsVector.size() << std::endl;
+        std::cout << ": " << setfloat.second/transactionsVector.size() << " || div = "<< utils.calcDiversification(setfloat.first) << '%' << std::endl;
     }
 
     return 0;

@@ -151,7 +151,8 @@ for stck in list(sectors_dict.values()):
     stocksToTransact.append(stock_name)
 
 # ISSUE HERE -> transactions loses track of stock tickers when copying over column headers
-transactions = pctChangeDf[pctChangeDf.columns[pctChangeDf.columns.isin(stocksToTransact)]]
+# transactions = pctChangeDf[pctChangeDf.columns[pctChangeDf.columns.isin(stocksToTransact)]]
+transactions = pctChangeDf.iloc[: , 0:20]
 # transactions = transactions.clip(0)
 # transactions = transactions.round(0).astype(int)
 # wSupport = transactions.min(axis=1).mean()

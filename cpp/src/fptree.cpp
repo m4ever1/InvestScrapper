@@ -150,10 +150,14 @@ FPTree::FPTree(const std::vector<Transaction>& transactions, const float& minimu
     // start tree construction
 
     // scan the transactions again
+    std::cout << "Creating initial FP-Tree" << std::endl;
+    int count = 0;
     for ( const Transaction& transaction : transactions ) 
     {
+        count++;
+        std::cout << (float)count/(float)transaction.size() << '%' << std::endl;
         std::list<EquivTrans> listOfEquivTrans = FPNode::convertToEquivTrans(transaction);
-        Utils::printEquivTrans(listOfEquivTrans);
+        // Utils::printEquivTrans(listOfEquivTrans);
         // select and sort the frequent items in transaction according to the order of items_ordered_by_frequency
         for ( const auto& equivTransaction : listOfEquivTrans ) 
         {

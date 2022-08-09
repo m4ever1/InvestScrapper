@@ -200,7 +200,11 @@ std::set<Pattern> Utils::IWIMining(const FPTree& fptree, const float& minSup, co
             {
                 Pattern new_pattern{ pattern };
                 new_pattern.first.insert( curr_item );
-                assert( curr_item_frequency >= pattern.second );
+                if (curr_item_frequency < pattern.second)
+                {
+                    std::cout << "ITEM FRED = " << curr_item_frequency << " PATTERN.SECOND = " << pattern.second << std::endl;
+                }
+                assert((int) curr_item_frequency >= (int) pattern.second );
                 new_pattern.second = pattern.second;
                 
                 curr_item_patterns.insert( { new_pattern } );
@@ -237,6 +241,17 @@ void Utils::printEquivTrans(const std::list<EquivTrans>& equivTransList)
     }
     std::cout << "================================================" << std::endl;
 
+}
+
+const float Utils::calcDiversification(std::set<Item> items)
+{
+    std::unordered_set<std::string> sectorSet;
+    for (const auto& item : items)
+    {
+        sectorSet.insert(item.mySector);
+    }
+
+    return ( (float) sectorSet.size()/(float)items.size() )*100;
 }
 
 Utils::~Utils() {
