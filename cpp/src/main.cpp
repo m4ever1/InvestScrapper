@@ -110,16 +110,25 @@ void printTransactions(const std::vector<std::vector<Item>>& transactionsVector)
     }
 }
 
-int main()
+int main(int argc, char *argv[])
 {
     // std::cout << "starting test" << std::endl;
     
     // test_1();
-    InputParser myInputParser("/home/miguel/InvestScrapper/input.txt");
+    InputParser myInputParser(argv[1]);
     
     std::vector<Transaction> transactionsVector;
 
-    myInputParser.buildTransactionsVector(transactionsVector);
+    if(!myInputParser.buildTransactionsVector(transactionsVector))
+    {
+        return 1;
+    }
+
+    std::ofstream fd("output.txt");
+    if (!fd.is_open())
+    {
+        std::cout << "FAILED OPENING OUTPUT FILE";
+    }
 
     const float min_average = 15;
 
@@ -136,12 +145,26 @@ int main()
 
     for(const auto& setfloat : patterns)
     {
+        bool first = true;
         for(const auto& item : setfloat.first)
         {
-            std::cout << item.myName << " s=" << item.mySector << "|";
+            if(first)
+            {
+                std::cout << item.myName; 
+                fd << item.myName;
+                first = false;
+            }
+            else
+            {
+                std::cout << "," << item.myName ; 
+                fd << "," << item.myName ;
+            }
         }
-        std::cout << ": " << setfloat.second/transactionsVector.size() << " || div = "<< utils.calcDiversification(setfloat.first) << '%' << std::endl;
+        std::cout << "|" << setfloat.second/transactionsVector.size() << "|"<< utils.calcDiversification(setfloat.first) << std::endl;
+        fd << "|" << setfloat.second/transactionsVector.size() << "|"<< utils.calcDiversification(setfloat.first) << std::endl;
     }
+
+    fd.close();
 
     return 0;
 }
