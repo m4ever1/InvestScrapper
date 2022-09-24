@@ -11,6 +11,7 @@ import random
 import inputReader
 # from spmf import Spmf
 import re
+import weightCalculate
 
 
 def whitespace_remover(dataframe):
@@ -42,7 +43,12 @@ for row in table.findAll('tr')[1:]:
     tickers.append(ticker)
     # sectors_dict[sector].append(ticker)
 
+tickers = [s.replace('\n', '') for s in tickers]
+start = datetime.datetime(2021, 1, 1)
+end = datetime.datetime(2022, 5, 10)
+data = yf.download(tickers, start=start, end=end)
 
+data["Adj Close"].to_csv("stocks.csv")
 
 df = pd.read_csv("stocks.csv")
 df = df.set_index("Date")
@@ -58,22 +64,22 @@ G = np.log(df).shift(-1) - np.log(df)
 
 G = G.dropna(how='all')
 
-rows = []
-for ticker_i in G:
-    column = []
-    for ticker_j in G:
-        column.append((np.mean(G[ticker_i].multiply(G[ticker_j])) - np.mean(G[ticker_i])*np.mean(G[ticker_j]))/(G[ticker_i].std()*G[ticker_j].std()))
-    rows.append(column)
+# rows = []
+# for ticker_i in G:
+#     column = []
+#     for ticker_j in G:
+#         column.append((np.mean(G[ticker_i].multiply(G[ticker_j])) - np.mean(G[ticker_i])*np.mean(G[ticker_j]))/(G[ticker_i].std()*G[ticker_j].std()))
+#     rows.append(column)
 
-C = pd.DataFrame(rows, columns=G.columns, index=G.columns)
+# C = pd.DataFrame(rows, columns=G.columns, index=G.columns)
 
-t = G.shape[0]
-n = G.shape[1]
+# t = G.shape[0]
+# n = G.shape[1]
 
-Q = t/n
+# Q = t/n
 
-lMax = 1 + 1/Q + 2*np.sqrt(1/Q)
-lMin = 1 + 1/Q - 2*np.sqrt(1/Q)
+# lMax = 1 + 1/Q + 2*np.sqrt(1/Q)
+# lMin = 1 + 1/Q - 2*np.sqrt(1/Q)
 
 for ticker in G.columns:
     row = table.find("a", string=ticker).parent.parent
@@ -85,10 +91,11 @@ pctChangeDf = df.apply(lambda x: x.div(x.iloc[0]).subtract(1).mul(100))
 
 stocksToTransact = []
 for stck in list(sectors_dict.values()):
-    stock_name = stck[0]
-    stocksToTransact.append(stock_name)
+    stock_name = stck
+    stocksToTransact += stock_name 
 
-transactions = pctChangeDf.iloc[: , 0:20]
+transactions = pctChangeDf
+# .iloc[: , 0:20]
 stockToSector = {stock: index for index, tuple in enumerate(sectors_dict.items()) for stock in tuple[1]}
 
 # listOfTransLists = '\r\n'.join(f"{' '.join(map(str, range(1, len(transactions.columns) + 1)))}:{transactions.iloc[i].sum()}:{np.array2string(transactions.iloc[i].values, max_line_width=float('inf'), floatmode='fixed', sign='-')[1:-1].strip()}" for i in range(len(transactions.index)))
@@ -99,4 +106,4 @@ listOfTransLists = re.sub("  +", " ", listOfTransLists)
 with open("input.txt", "w") as f:
     f.write(listOfTransLists)
 
-inputReader.buildDataFrame()
+# weights = weightCalculate.getWeights(df)
