@@ -4,6 +4,10 @@
 #include <set>
 #include "fptree.hpp"
 #include "Utils.hpp"
+#include <boost/algorithm/string/split.hpp> // boost::algorithm::split
+#include <boost/algorithm/string/classification.hpp> // boost::is_any_of
+#include "string_format.h"
+
 
 void test_1()
 {
@@ -115,7 +119,23 @@ int main(int argc, char *argv[])
     // std::cout << "starting test" << std::endl;
     
     // test_1();
-    InputParser myInputParser(argv[1]);
+    std::string filename = argv[1];
+    std::map<std::string, std::string> startDate;
+    std::map<std::string, std::string> endDate;
+    
+    std::vector<std::string> splitResult;
+    boost::algorithm::split(splitResult, filename, boost::is_any_of("-"));
+
+    startDate["year"] = splitResult.at(1);
+    startDate["month"] = splitResult.at(2);
+    startDate["day"] = splitResult.at(3);
+
+    endDate["year"] = splitResult.at(5);
+    endDate["month"] = splitResult.at(6);
+    endDate["day"] = splitResult.at(7);
+
+    std::cout << startDate["year"] << std::endl;
+    InputParser myInputParser(filename);
     
     std::vector<Transaction> transactionsVector;
 
@@ -123,14 +143,20 @@ int main(int argc, char *argv[])
     {
         return 1;
     }
-
-    std::ofstream fd("output.txt");
+    
+    std::string outputFileName = string_format("output-{%s}-{%s}-{%s}-To-{%s}-{%s}-{%s}.txt", startDate["year"].c_str(),startDate["month"].c_str(),startDate["day"].c_str(),endDate["year"].c_str(),endDate["month"].c_str(),endDate["day"].c_str());
+    std::ofstream fd("outputs/"+outputFileName);
     if (!fd.is_open())
     {
         std::cout << "FAILED OPENING OUTPUT FILE";
     }
+    else
+    {
+        std::cout << "saving to " << outputFileName << std::endl; 
+    }
+    
 
-    const float min_average = 15;
+    const float min_average = 5;
 
     const float minimum_support_threshold = min_average*transactionsVector.size();
 

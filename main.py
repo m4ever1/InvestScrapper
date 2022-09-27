@@ -11,7 +11,8 @@ import random
 import inputReader
 # from spmf import Spmf
 import re
-import weightCalculate
+import os
+# import weightCalculate
 
 
 def whitespace_remover(dataframe):
@@ -44,8 +45,18 @@ for row in table.findAll('tr')[1:]:
     # sectors_dict[sector].append(ticker)
 
 tickers = [s.replace('\n', '') for s in tickers]
-start = datetime.datetime(2021, 1, 1)
-end = datetime.datetime(2022, 5, 10)
+dateStart = {
+            "year" : 2022,
+            "month" : 8,
+            "day"   : 1
+        }
+dateEnd = {
+            "year" : 2022,
+            "month" : 9,
+            "day"   : 1
+        }
+start = datetime.datetime(dateStart["year"], dateStart["month"], dateStart["day"])
+end = datetime.datetime(dateEnd["year"], dateEnd["month"], dateEnd["day"])
 data = yf.download(tickers, start=start, end=end)
 
 data["Adj Close"].to_csv("stocks.csv")
@@ -103,7 +114,13 @@ stockToSector = {stock: index for index, tuple in enumerate(sectors_dict.items()
 listOfTransLists = '\r\n'.join(f"{' '.join(map(str, transactions.columns))}:{' '.join(map(str, [stockToSector[index] for index in transactions.iloc[i].index]))}:{np.array2string(transactions.iloc[i].values, max_line_width=float('inf'), floatmode='fixed', sign='-')[1:-1].strip()}" for i in range(len(transactions.index)))
 listOfTransLists = re.sub("  +", " ", listOfTransLists)
 
-with open("input.txt", "w") as f:
+dirname = os.path.dirname(__file__)
+
+outputFile = f'input-{dateStart["year"]}-{dateStart["month"]}-{dateStart["day"]}-To-{dateEnd["year"]}-{dateEnd["month"]}-{dateEnd["day"]}-.txt'
+filePath = os.path.join(dirname, "cpp/bin/inputs")
+relativePath = os.path.join(filePath, outputFile)
+
+with open(relativePath, "w") as f:
     f.write(listOfTransLists)
 
 # weights = weightCalculate.getWeights(df)

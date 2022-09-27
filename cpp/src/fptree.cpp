@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <execution>
 #include <cstdint>
 #include <cassert>
 #include <utility>
@@ -12,9 +13,9 @@ FPNode::FPNode(const Item& item, const std::shared_ptr<FPNode>& parent, const fl
 
 std::list<EquivTrans> FPNode::convertToEquivTrans(Transaction S)
 {
-    std::sort(S.begin(), S.end(), [] (const Item& lhs, const Item& rhs){return lhs.myExternalUtil < rhs.myExternalUtil;});
+    std::sort(std::execution::par_unseq, S.begin(), S.end(), [] (const Item& lhs, const Item& rhs){return lhs.myExternalUtil < rhs.myExternalUtil;});
     Transaction copyOfS = S;
-    int p = std::unique(copyOfS.begin(), copyOfS.end(), 
+    int p = std::unique(std::execution::par_unseq, copyOfS.begin(), copyOfS.end(), 
             [] (const Item& lhs, const Item& rhs){return lhs.myExternalUtil == rhs.myExternalUtil;}) - copyOfS.begin();
     float wref = 0;
     std::list<EquivTrans> equivTransVec;
@@ -47,7 +48,7 @@ FPTree::FPTree(std::vector<EquivTrans>& transactions, const float& minimum_suppo
 
     // order items by decreasing frequency
 
-    std::sort(transactions.begin(), transactions.end(), 
+    std::sort(std::execution::par_unseq, transactions.begin(), transactions.end(), 
     [] (const EquivTrans& lhs, const EquivTrans& rhs){return lhs.myWeight > rhs.myWeight;});
 
     // keep only items which have a frequency greater or equal than the minimum support threshold
@@ -60,10 +61,12 @@ FPTree::FPTree(std::vector<EquivTrans>& transactions, const float& minimum_suppo
 
 
     // start tree construction
-
+    int count = 0;
     // scan the transactions again
     for ( const EquivTrans& transaction : transactions ) 
     {
+        count++;
+        std::cout << count << "/" << transactions.size() << std::endl;
         auto curr_fpnode = root;
         // select and sort the frequent items in transaction according to the order of items_ordered_by_frequency
         const float& weight = transaction.myWeight;
@@ -77,7 +80,7 @@ FPTree::FPTree(std::vector<EquivTrans>& transactions, const float& minimum_suppo
                 // insert item in the tree
 
                 // check if curr_fpnode has a child curr_fpnode_child such that curr_fpnode_child.item = item
-                const auto it = std::find_if(
+                const auto it = std::find_if(std::execution::par_unseq,
                     curr_fpnode->children.cbegin(), curr_fpnode->children.cend(),  [item](const std::shared_ptr<FPNode>& fpnode) {
                         return fpnode->item.myName == item.myName;
                 } );
@@ -155,7 +158,8 @@ FPTree::FPTree(const std::vector<Transaction>& transactions, const float& minimu
     for ( const Transaction& transaction : transactions ) 
     {
         count++;
-        std::cout << (float)count/(float)transaction.size() << '%' << std::endl;
+        // std::cout << (float)count/(float)transaction.size() << '%' << std::endl;
+        std::cout << count << "/" << transactions.size() << std::endl;
         std::list<EquivTrans> listOfEquivTrans = FPNode::convertToEquivTrans(transaction);
         // Utils::printEquivTrans(listOfEquivTrans);
         // select and sort the frequent items in transaction according to the order of items_ordered_by_frequency
@@ -167,14 +171,14 @@ FPTree::FPTree(const std::vector<Transaction>& transactions, const float& minimu
             {
 
                 // check if item is contained in the current transaction
-                auto found_item = std::find( equivTransaction.myItems.begin(), equivTransaction.myItems.end(), pair.first );
+                auto found_item = std::find(std::execution::par_unseq, equivTransaction.myItems.begin(), equivTransaction.myItems.end(), pair.first );
                 if ( found_item != equivTransaction.myItems.end() ) 
                 {
                     const Item& item = *found_item;
                     // insert item in the tree
 
                     // check if curr_fpnode has a child curr_fpnode_child such that curr_fpnode_child.item = item
-                    const auto it = std::find_if(
+                    const auto it = std::find_if(std::execution::par_unseq,
                         curr_fpnode->children.cbegin(), curr_fpnode->children.cend(),  [item](const std::shared_ptr<FPNode>& fpnode) {
                             return fpnode->item.myName == item.myName;
                     } );
