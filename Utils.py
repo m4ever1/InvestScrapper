@@ -92,7 +92,7 @@ def convertToInputFile(df: pd.DataFrame, dateStart: dict, dateEnd: dict) -> str:
     #     stock_name = stck
     #     stocksToTransact += stock_name 
 
-    transactions = pctChangeDf.iloc[: , 0:20]
+    transactions = pctChangeDf
     # stockToSector = {stock: index for index, tuple in enumerate(sectors_dict.items()) for stock in tuple[1]}
     stockToSector, droppedTicker = getSectorsDict(df)
     # listOfTransLists = '\r\n'.join(f"{' '.join(map(str, range(1, len(transactions.columns) + 1)))}:{transactions.iloc[i].sum()}:{np.array2string(transactions.iloc[i].values, max_line_width=float('inf'), floatmode='fixed', sign='-')[1:-1].strip()}" for i in range(len(transactions.index)))
@@ -123,7 +123,7 @@ def getGICSSectors(G: pd.DataFrame, table) -> defaultdict(list):
         
     return sectors_dict
 
-def generateInputFile(dateStart: dict, dateEnd: dict, granularity: str) -> list(str):
+def generateInputFile(dateStart: dict, dateEnd: dict, granularity: str) -> list:
     assert(dateStart["day"] == dateEnd["day"])
     if granularity == "yearly":
         assert(dateStart["month"] == dateStart["month"])
@@ -133,6 +133,9 @@ def generateInputFile(dateStart: dict, dateEnd: dict, granularity: str) -> list(
 
     auxDateStart = dateStart.copy()
     while(auxDateStart != dateEnd):
+        if auxDateStart["month"] == 12:
+            auxDateStart["year"] += 1
+            auxDateStart["month"] = 1
         auxDateEnd = auxDateStart.copy()
         auxDateEnd[granularity] += 1
         
