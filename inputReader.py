@@ -6,8 +6,8 @@ def getInput(filename = ""):
     f = open(filename)
     return f
 
-def parseInput():
-    file = getInput()
+def parseInput(filename = ""):
+    file = getInput(filename)
     entries = []
     for line in file.readlines():
         entry = {}
@@ -19,10 +19,10 @@ def parseInput():
         entries.append(entry)
     return entries
 
-def buildDataFrame():
-    df = pd.DataFrame.from_dict(parseInput())
+def buildDataFrame(filename = ""):
+    df = pd.DataFrame.from_dict(parseInput(filename))
     return df
 
-def optimalTickers():
-    entries = parseInput()
+def optimalTickers(filename = ""):
+    entries = parseInput(filename)
     
