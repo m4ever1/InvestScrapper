@@ -1,5 +1,5 @@
 CXX		  := g++
-CXX_FLAGS := -Wall -Wextra -std=c++20 -pedantic -ggdb3 -O3
+CXX_FLAGS := -Wall -Wextra -std=c++20 -pedantic -ggdb3 -O3 -g
 
 BIN		:= bin
 SRC		:= src
@@ -20,4 +20,4 @@ $(BIN)/$(EXECUTABLE): $(SRC)/*.cpp
 	$(CXX) $(CXX_FLAGS) -I$(INCLUDE) -L$(LIB) $^ -o $@ $(LIBRARIES) -ltbb
 
 clean:
-	-rm $(BIN)/*
+	-rm $(BIN)/main

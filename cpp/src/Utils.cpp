@@ -12,8 +12,8 @@ bool Utils::contains_single_path(const FPTree& fptree)
     return fptree.empty() || contains_single_path( fptree.root );
 }
 
-Utils::Utils(const std::vector<Transaction>& transactions_in, const float& minSup_in) : 
-transactions(transactions_in), minSup(minSup_in)
+Utils::Utils(const std::vector<Transaction>& transactions_in, const int& minSup_in, const int& minDiv_in) : 
+transactions(transactions_in), minSup(minSup_in), minDiv(minDiv_in)
 {
     Utils::countItemIWISupport(transactions_in);
 }
@@ -29,9 +29,9 @@ void Utils::countItemIWISupport(const std::vector<Transaction>& transactions)
     }
 }
 
-float Utils::IWISupport(const Pattern& itemset) const
+int Utils::IWISupport(const Pattern& itemset) const
 {
-    // float IWI = std::numeric_limits<float>::max();   
+    // int IWI = std::numeric_limits<int>::max();   
     // for(const Pattern& pat : itemset)
     // {
     //     if (pat.second < IWI)
@@ -52,7 +52,7 @@ std::set<Pattern> Utils::getUnionWithHeaderEntry(const std::set<Pattern>& prefix
     return result;
 }
 
-std::set<Pattern> Utils::IWIMining(const FPTree& fptree, const float& minSup, const std::set<Pattern>& prefix)
+std::set<Pattern> Utils::IWIMining(const FPTree& fptree, const int& minSup, const std::set<Pattern>& prefix, int level)
 {
     if ( fptree.empty() ) { return {}; }
 
@@ -67,7 +67,7 @@ std::set<Pattern> Utils::IWIMining(const FPTree& fptree, const float& minSup, co
         while ( curr_fpnode ) 
         {
             const Item& curr_fpnode_item = curr_fpnode->item;
-            const float curr_fpnode_frequency = curr_fpnode->frequency;
+            const int curr_fpnode_frequency = curr_fpnode->frequency;
 
             // add a pattern formed only by the item of the current node
             Pattern new_pattern{ { curr_fpnode_item }, curr_fpnode_frequency };
@@ -91,139 +91,149 @@ std::set<Pattern> Utils::IWIMining(const FPTree& fptree, const float& minSup, co
 
         return single_path_patterns;
     }
-    else {
-    // generate conditional fptrees for each different item in the fptree, then join the results
-
-    std::set<Pattern> F;
-
-        // for each item in the fptree
-    for ( const auto& pair : fptree.header_table ) 
+    else 
     {
-        const Item& curr_item = pair.first;
+        // generate conditional fptrees for each different item in the fptree, then join the results
 
-        std::set<Pattern> I;
-        //  = getUnionWithHeaderEntry(prefix, pair);
-        // const float iwiSupportOfI = IWISupport(I);
-        // if (iwiSupportOfI <= minSup)
-        // {
-        //     F.merge(I);
-        // }
-        
-        // build the conditional fptree relative to the current item
-
-        // start by generating the conditional pattern base
-        std::vector<TransformedPrefixPath> conditional_pattern_base;
-
-        // for each path in the header_table (relative to the current item)
-        auto path_starting_fpnode = pair.second;
-        while ( path_starting_fpnode )
+        std::set<Pattern> F;
+        int count = 0;
+            // for each item in the fptree
+        for ( const auto& pair : fptree.header_table ) 
         {
-            // construct the transformed prefix path
-
-            // each item in the transformed prefix path has the same frequency (the frequency of path_starting_fpnode)
-            const float path_starting_fpnode_frequency = path_starting_fpnode->frequency;
-
-            auto curr_path_fpnode = path_starting_fpnode->parent.lock();
-            // check if curr_path_fpnode is already the root of the fptree
-            if ( curr_path_fpnode->parent.lock() ) 
+            if (level == 0)
             {
-                // the path has at least one node (excluding the starting node and the root)
-                TransformedPrefixPath transformed_prefix_path{ {}, path_starting_fpnode_frequency };
-
-                while ( curr_path_fpnode->parent.lock() ) 
-                {
-                    // assert( curr_path_fpnode->frequency >= path_starting_fpnode_frequency );
-                    transformed_prefix_path.first.push_back( curr_path_fpnode->item );
-
-                    // advance to the next node in the path
-                    curr_path_fpnode = curr_path_fpnode->parent.lock();
-                }
-
-                conditional_pattern_base.push_back( transformed_prefix_path );
+                std::cout << pair.first.myName << " " << count << "/" << fptree.header_table.size() << std::endl;
             }
+            
+            const Item& curr_item = pair.first;
 
-            // advance to the next path
-            path_starting_fpnode = path_starting_fpnode->node_link;
-        }
-
-        // generate the transactions that represent the conditional pattern base
-        std::vector<EquivTrans> conditional_fptree_transactions;
-        for ( const TransformedPrefixPath& transformed_prefix_path : conditional_pattern_base ) 
-        {
-            const std::vector<Item>& transformed_prefix_path_items = transformed_prefix_path.first;
-            const float transformed_prefix_path_items_frequency = transformed_prefix_path.second;
-
-            Transaction transaction = transformed_prefix_path_items;
-
-            EquivTrans equivTrans(transaction, transformed_prefix_path_items_frequency);
-
-            // add the same transaction transformed_prefix_path_items_frequency times
-            // for ( auto i = 0; i < transformed_prefix_path_items_frequency; ++i ) {
-            conditional_fptree_transactions.push_back( equivTrans );
+            std::set<Pattern> I;
+            //  = getUnionWithHeaderEntry(prefix, pair);
+            // const int iwiSupportOfI = IWISupport(I);
+            // if (iwiSupportOfI <= minSup)
+            // {
+            //     F.merge(I);
             // }
-        }
+            
+            // build the conditional fptree relative to the current item
 
-        // build the conditional fptree relative to the current item with the transactions just generated
-        FPTree conditional_fptree( conditional_fptree_transactions, fptree.minimum_support_threshold );
-        // call recursively fptree_growth on the conditional fptree (empty fptree: no patterns)
-        // std::cout << "===================== BEFORE =====================" << std::endl;
-        // conditional_fptree.printTree();
-        conditional_fptree.pruneItems();
-        // std::cout << "===================== AFTER =====================" << std::endl;
-        // conditional_fptree.printTree();
-        // if (!conditional_fptree.empty())
-        // {
-       std::set<Pattern> conditional_patterns = IWIMining(conditional_fptree, minSup, I);
-        // }
-        
+            // start by generating the conditional pattern base
+            std::vector<TransformedPrefixPath> conditional_pattern_base;
 
-        // construct patterns relative to the current item using both the current item and the conditional patterns
-        std::set<Pattern> curr_item_patterns;
-
-
-        // the first pattern is made only by the current item
-        // compute the frequency of this pattern by summing the frequency of the nodes which have the same item (follow the node links)
-        float curr_item_frequency = 0;
-        auto fpnode = pair.second;
-        while ( fpnode ) 
-        {
-            curr_item_frequency += fpnode->frequency;
-            fpnode = fpnode->node_link;
-        }
-        // add the pattern as a result
-        if (curr_item_frequency >= minSup)
-        {
-            Pattern pattern{ { curr_item }, curr_item_frequency };
-            curr_item_patterns.insert( pattern );
-            // the next patterns are generated by adding the current item to each conditional pattern
-            for ( const Pattern& pattern : conditional_patterns ) 
+            // for each path in the header_table (relative to the current item)
+            auto path_starting_fpnode = pair.second;
+            while ( path_starting_fpnode )
             {
-                Pattern new_pattern{ pattern };
-                new_pattern.first.insert( curr_item );
-                if (curr_item_frequency < pattern.second)
+                // construct the transformed prefix path
+
+                // each item in the transformed prefix path has the same frequency (the frequency of path_starting_fpnode)
+                const int path_starting_fpnode_frequency = path_starting_fpnode->frequency;
+
+                auto curr_path_fpnode = path_starting_fpnode->parent.lock();
+                // check if curr_path_fpnode is already the root of the fptree
+                if ( curr_path_fpnode->parent.lock() ) 
                 {
-                    std::cout << "ITEM FRED = " << curr_item_frequency << " PATTERN.SECOND = " << pattern.second << std::endl;
+                    // the path has at least one node (excluding the starting node and the root)
+                    TransformedPrefixPath transformed_prefix_path{ {}, path_starting_fpnode_frequency };
+
+                    while ( curr_path_fpnode->parent.lock() ) 
+                    {
+                        // assert( curr_path_fpnode->frequency >= path_starting_fpnode_frequency );
+                        transformed_prefix_path.first.push_back( curr_path_fpnode->item );
+
+                        // advance to the next node in the path
+                        curr_path_fpnode = curr_path_fpnode->parent.lock();
+                    }
+
+                    conditional_pattern_base.push_back( transformed_prefix_path );
                 }
-                assert((int) curr_item_frequency >= (int) pattern.second );
-                new_pattern.second = pattern.second;
-                
-                curr_item_patterns.insert( { new_pattern } );
+
+                // advance to the next path
+                path_starting_fpnode = path_starting_fpnode->node_link;
             }
 
-            // join the patterns generated by the current item with all the other items of the fptree
-            F.insert( curr_item_patterns.cbegin(), curr_item_patterns.cend() );
+            // generate the transactions that represent the conditional pattern base
+            std::vector<EquivTrans> conditional_fptree_transactions;
+            for ( const TransformedPrefixPath& transformed_prefix_path : conditional_pattern_base ) 
+            {
+                const std::vector<Item>& transformed_prefix_path_items = transformed_prefix_path.first;
+                const int transformed_prefix_path_items_frequency = transformed_prefix_path.second;
+
+                Transaction transaction = transformed_prefix_path_items;
+
+                EquivTrans equivTrans(transaction, transformed_prefix_path_items_frequency);
+
+                // add the same transaction transformed_prefix_path_items_frequency times
+                // for ( auto i = 0; i < transformed_prefix_path_items_frequency; ++i ) {
+                conditional_fptree_transactions.push_back( equivTrans );
+                // }
+            }
+
+            // build the conditional fptree relative to the current item with the transactions just generated
+            FPTree conditional_fptree( conditional_fptree_transactions, fptree.minimum_support_threshold );
+            // call recursively fptree_growth on the conditional fptree (empty fptree: no patterns)
+            // std::cout << "===================== BEFORE =====================" << std::endl;
+            // conditional_fptree.printTree();
+            conditional_fptree.pruneItems();
+            // std::cout << "===================== AFTER =====================" << std::endl;
+            // conditional_fptree.printTree();
+            // if (!conditional_fptree.empty())
+            // {
+            std::set<Pattern> conditional_patterns = IWIMining(conditional_fptree, minSup, I, level+1);
+            // }
+            
+
+            // construct patterns relative to the current item using both the current item and the conditional patterns
+            std::set<Pattern> curr_item_patterns;
+
+
+            // the first pattern is made only by the current item
+            // compute the frequency of this pattern by summing the frequency of the nodes which have the same item (follow the node links)
+            int curr_item_frequency = 0.00000000000000000000000000000;
+            auto fpnode = pair.second;
+            while ( fpnode ) 
+            {
+                curr_item_frequency += fpnode->frequency;
+                fpnode = fpnode->node_link;
+            }
+            // add the pattern as a result
+            if (curr_item_frequency >= minSup)
+            {
+                Pattern pattern{ { curr_item }, curr_item_frequency };
+                curr_item_patterns.insert( pattern );
+                // the next patterns are generated by adding the current item to each conditional pattern
+                for ( const Pattern& pattern : conditional_patterns ) 
+                {
+                    Pattern new_pattern{ pattern };
+                    new_pattern.first.insert( curr_item );
+                    if (curr_item_frequency < pattern.second)
+                    {
+                        std::cout <<  std::setprecision(15) << "Precision error" << pattern.second << "||" << curr_item_frequency << std::endl;
+                    }
+                    assert((int) curr_item_frequency >= (int) pattern.second );
+                    new_pattern.second = pattern.second;
+                    
+                    if(calcDiversification(new_pattern.first) > minDiv)
+                    {
+                        curr_item_patterns.insert( { new_pattern } );
+                    }
+
+                }
+
+                // join the patterns generated by the current item with all the other items of the fptree
+                F.insert( curr_item_patterns.cbegin(), curr_item_patterns.cend() );
+            }
+            
+
+            count++;
         }
-        
-
-
-    }
-    return F;
+        return F;
 
     // return multi_path_patterns;
     }
 }
 
-const std::map<Item, float>& Utils::getIwiSupportByItem()
+std::map<Item, int>& Utils::getIwiSupportByItem()
 {
     return iwiSupportByItem;
 }
@@ -243,7 +253,7 @@ void Utils::printEquivTrans(const std::list<EquivTrans>& equivTransList)
 
 }
 
-const float Utils::calcDiversification(std::set<Item> items)
+const int Utils::calcDiversification(std::set<Item> items)
 {
     std::unordered_set<std::string> sectorSet;
     for (const auto& item : items)

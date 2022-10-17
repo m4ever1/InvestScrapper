@@ -6,24 +6,24 @@
 #include "fptree.hpp"
 #include "Utils.hpp"
 
-FPNode::FPNode(const Item& item, const std::shared_ptr<FPNode>& parent, const float weight) :
+FPNode::FPNode(const Item& item, const std::shared_ptr<FPNode>& parent, const int weight) :
     item( item ), frequency( weight ), node_link( nullptr ), parent( parent ), children()
 {
 }
 
 std::list<EquivTrans> FPNode::convertToEquivTrans(Transaction S)
 {
-    std::sort(std::execution::par_unseq, S.begin(), S.end(), [] (const Item& lhs, const Item& rhs){return lhs.myExternalUtil < rhs.myExternalUtil;});
+    std::sort(S.begin(), S.end(), [] (const Item& lhs, const Item& rhs){return lhs.myExternalUtil < rhs.myExternalUtil;});
     Transaction copyOfS = S;
-    int p = std::unique(std::execution::par_unseq, copyOfS.begin(), copyOfS.end(), 
+    int p = std::unique(copyOfS.begin(), copyOfS.end(), 
             [] (const Item& lhs, const Item& rhs){return lhs.myExternalUtil == rhs.myExternalUtil;}) - copyOfS.begin();
-    float wref = 0;
+    int wref = 0;
     std::list<EquivTrans> equivTransVec;
 
     while(equivTransVec.size() != p)
     {
-        float extUtil = S.front().myExternalUtil;
-        float wout = extUtil - wref;
+        int extUtil = S.front().myExternalUtil;
+        int wout = extUtil - wref;
         wref = extUtil;
         
         equivTransVec.push_back(EquivTrans(S, wout));
@@ -40,24 +40,17 @@ std::list<EquivTrans> FPNode::convertToEquivTrans(Transaction S)
     return equivTransVec;
 }
 
-FPTree::FPTree(std::vector<EquivTrans>& transactions, const float& minimum_support_threshold) :
-    root( std::make_shared<FPNode>( Item("ROOT", (float) 0, "ROOT"), nullptr, 0 ) ), header_table(),
+FPTree::FPTree(std::vector<EquivTrans>& transactions, const int& minimum_support_threshold) :
+    root( std::make_shared<FPNode>( Item("ROOT", (int) 0, "ROOT"), nullptr, 0 ) ), header_table(),
     minimum_support_threshold( minimum_support_threshold )
 {
     // scan the transactions counting the frequency of each item
-
     // order items by decreasing frequency
 
-    std::sort(std::execution::par_unseq, transactions.begin(), transactions.end(), 
+    std::sort(transactions.begin(), transactions.end(), 
     [] (const EquivTrans& lhs, const EquivTrans& rhs){return lhs.myWeight > rhs.myWeight;});
 
     // keep only items which have a frequency greater or equal than the minimum support threshold
-    // for ( auto it = iwiSupportByItem.cbegin(); it != iwiSupportByItem.cend(); ) 
-    // {
-    //     const float itemIWISupp = (*it).second;
-    //     if ( itemIWISupp < minimum_support_threshold ) { iwiSupportByItem.erase( it++ ); }
-    //     else { ++it; }
-    // }
 
 
     // start tree construction
@@ -66,10 +59,10 @@ FPTree::FPTree(std::vector<EquivTrans>& transactions, const float& minimum_suppo
     for ( const EquivTrans& transaction : transactions ) 
     {
         count++;
-        std::cout << count << "/" << transactions.size() << std::endl;
+        // std::cout << count << "/" << transactions.size() << std::endl;
         auto curr_fpnode = root;
         // select and sort the frequent items in transaction according to the order of items_ordered_by_frequency
-        const float& weight = transaction.myWeight;
+        const int& weight = transaction.myWeight;
 
         for(const auto& pair : transaction.myItems)
         {
@@ -80,7 +73,7 @@ FPTree::FPTree(std::vector<EquivTrans>& transactions, const float& minimum_suppo
                 // insert item in the tree
 
                 // check if curr_fpnode has a child curr_fpnode_child such that curr_fpnode_child.item = item
-                const auto it = std::find_if(std::execution::par_unseq,
+                const auto it = std::find_if(
                     curr_fpnode->children.cbegin(), curr_fpnode->children.cend(),  [item](const std::shared_ptr<FPNode>& fpnode) {
                         return fpnode->item.myName == item.myName;
                 } );
@@ -124,31 +117,31 @@ FPTree::FPTree(std::vector<EquivTrans>& transactions, const float& minimum_suppo
     }
 }
 
-FPTree::FPTree(const std::vector<Transaction>& transactions, const float& minimum_support_threshold_in, const std::map<Item, float>& iwiSupportByItem) :
-    root( std::make_shared<FPNode>( Item("ROOT", (float) 0, "ROOT"), nullptr, 0 ) ), header_table(),
+FPTree::FPTree(const std::vector<Transaction>& transactions, const int& minimum_support_threshold_in, std::map<Item, int>& iwiSupportByItem) :
+    root( std::make_shared<FPNode>( Item("ROOT", (int) 0, "ROOT"), nullptr, 0 ) ), header_table(),
     minimum_support_threshold( minimum_support_threshold_in )
 {
 
     // keep only items which have a frequency greater or equal than the minimum support threshold
-    // for ( auto it = iwiSupportByItem.cbegin(); it != iwiSupportByItem.cend(); ) 
-    // {
-    //     const float itemIWISupp = (*it).second;
-    //     if ( itemIWISupp < minimum_support_threshold ) { iwiSupportByItem.erase( it++ ); }
-    //     else { ++it; }
-    // }
+    for ( auto it = iwiSupportByItem.cbegin(); it != iwiSupportByItem.cend(); ) 
+    {
+        const int itemIWISupp = (*it).second;
+        if ( itemIWISupp < minimum_support_threshold ) { iwiSupportByItem.erase( it++ ); }
+        else { ++it; }
+    }
 
     // order items by decreasing frequency
     struct iwiSupportComparator
     {
-        bool operator()(const std::pair<Item, float> &lhs, const std::pair<Item, float> &rhs) const
+        bool operator()(const std::pair<Item, int> &lhs, const std::pair<Item, int> &rhs) const
         {
-            // 1st: compare the float values of each pair, return true if lhs is greater than rhs
+            // 1st: compare the int values of each pair, return true if lhs is greater than rhs
             // if lhs is the same nr as rhs, compare the strings lexicographically, and return
             // true if lhs' string is lexicographcally greater than rhs'
             return std::tie(lhs.second, lhs.first.myName) > std::tie(rhs.second, rhs.first.myName);
         }
     };
-    std::set<std::pair<Item, float>, iwiSupportComparator> itemsOrderedByIwi(iwiSupportByItem.cbegin(), iwiSupportByItem.cend());
+    std::set<std::pair<Item, int>, iwiSupportComparator> itemsOrderedByIwi(iwiSupportByItem.cbegin(), iwiSupportByItem.cend());
 
     // start tree construction
 
@@ -158,27 +151,27 @@ FPTree::FPTree(const std::vector<Transaction>& transactions, const float& minimu
     for ( const Transaction& transaction : transactions ) 
     {
         count++;
-        // std::cout << (float)count/(float)transaction.size() << '%' << std::endl;
+        // std::cout << (int)count/(int)transaction.size() << '%' << std::endl;
         std::cout << count << "/" << transactions.size() << std::endl;
         std::list<EquivTrans> listOfEquivTrans = FPNode::convertToEquivTrans(transaction);
         // Utils::printEquivTrans(listOfEquivTrans);
         // select and sort the frequent items in transaction according to the order of items_ordered_by_frequency
         for ( const auto& equivTransaction : listOfEquivTrans ) 
         {
-            const float& weight = equivTransaction.myWeight;
+            const int& weight = equivTransaction.myWeight;
             auto curr_fpnode = root;
             for(const auto& pair : itemsOrderedByIwi)
             {
 
                 // check if item is contained in the current transaction
-                auto found_item = std::find(std::execution::par_unseq, equivTransaction.myItems.begin(), equivTransaction.myItems.end(), pair.first );
+                auto found_item = std::find(equivTransaction.myItems.begin(), equivTransaction.myItems.end(), pair.first );
                 if ( found_item != equivTransaction.myItems.end() ) 
                 {
                     const Item& item = *found_item;
                     // insert item in the tree
 
                     // check if curr_fpnode has a child curr_fpnode_child such that curr_fpnode_child.item = item
-                    const auto it = std::find_if(std::execution::par_unseq,
+                    const auto it = std::find_if(
                         curr_fpnode->children.cbegin(), curr_fpnode->children.cend(),  [item](const std::shared_ptr<FPNode>& fpnode) {
                             return fpnode->item.myName == item.myName;
                     } );

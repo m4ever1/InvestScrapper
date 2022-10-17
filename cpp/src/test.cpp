@@ -54,13 +54,13 @@
 
 //     const std::set<Pattern> patterns = fptree_growth( fptree );
 
-//     for(const auto& setfloat : patterns)
+//     for(const auto& setint : patterns)
 //     {
-//         for(const auto& item : setfloat.first)
+//         for(const auto& item : setint.first)
 //         {
 //             std::cout << item.myName << " ";
 //         }
-//         std::cout << ": " << setfloat.second << std::endl;
+//         std::cout << ": " << setint.second << std::endl;
 //     }
 
     // assert( patterns.size() == 19 );

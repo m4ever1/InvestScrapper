@@ -8,7 +8,6 @@
 #include <boost/algorithm/string/classification.hpp> // boost::is_any_of
 #include "string_format.h"
 
-
 void test_1()
 {
     const Item a1{"A" , 0, "A"};
@@ -50,24 +49,26 @@ void test_1()
         { a6, b6, c6, d6 }
     };
 
-    const float minimum_support_threshold = 300;
+    const int minimum_support_threshold = 300;
 
-    Utils utils(transactions, minimum_support_threshold);
-    const std::map<Item, float> iwiSupportByItem = utils.getIwiSupportByItem();
+    const int minumum_diversification = 1;
+
+    Utils utils(transactions, minimum_support_threshold, minumum_diversification);
+    std::map<Item, int> &iwiSupportByItem = utils.getIwiSupportByItem();
 
     const FPTree fptree(transactions, minimum_support_threshold, iwiSupportByItem);
 
     const std::set<Pattern> prefix;
 
-    const std::set<Pattern> patterns = utils.IWIMining( fptree, minimum_support_threshold, prefix);
+    const std::set<Pattern> patterns = utils.IWIMining( fptree, minimum_support_threshold, prefix, 0);
 
-    for(const auto& setfloat : patterns)
+    for(const auto& setint : patterns)
     {
-        for(const auto& item : setfloat.first)
+        for(const auto& item : setint.first)
         {
             std::cout << item.myName << " ";
         }
-        std::cout << ": " << setfloat.second << std::endl;
+        std::cout << ": " << setint.second << std::endl;
     }
 
     // assert( patterns.size() == 19 );
@@ -122,6 +123,7 @@ int main(int argc, char *argv[])
     std::string filename = argv[1];
     std::map<std::string, std::string> startDate;
     std::map<std::string, std::string> endDate;
+    std::string dataSet = "spy"
     
     std::vector<std::string> splitResult;
     boost::algorithm::split(splitResult, filename, boost::is_any_of("-"));
@@ -134,6 +136,8 @@ int main(int argc, char *argv[])
     endDate["month"] = splitResult.at(6);
     endDate["day"] = splitResult.at(7);
 
+    dataSet = splitResult.at(8);
+
     std::cout << startDate["year"] << std::endl;
     InputParser myInputParser(filename);
     
@@ -144,7 +148,7 @@ int main(int argc, char *argv[])
         return 1;
     }
     
-    std::string outputFileName = string_format("output-{%s}-{%s}-{%s}-To-{%s}-{%s}-{%s}.txt", startDate["year"].c_str(),startDate["month"].c_str(),startDate["day"].c_str(),endDate["year"].c_str(),endDate["month"].c_str(),endDate["day"].c_str());
+    std::string outputFileName = string_format("output-{%s}-{%s}-{%s}-To-{%s}-{%s}-{%s}-{%s}.txt", startDate["year"].c_str(),startDate["month"].c_str(),startDate["day"].c_str(),endDate["year"].c_str(),endDate["month"].c_str(),endDate["day"].c_str(),dataSet);
     std::ofstream fd("outputs/"+outputFileName);
     if (!fd.is_open())
     {
@@ -156,23 +160,25 @@ int main(int argc, char *argv[])
     }
     
 
-    const float min_average = 5;
+    const int min_average = 8*PRECISION;
 
-    const float minimum_support_threshold = min_average*transactionsVector.size();
+    const int minimum_support_threshold = min_average*transactionsVector.size();
 
-    Utils utils(transactionsVector, minimum_support_threshold);
-    const std::map<Item, float> iwiSupportByItem = utils.getIwiSupportByItem();
+    const int minimum_diversification = 70;
+
+    Utils utils(transactionsVector, minimum_support_threshold, minimum_diversification);
+    std::map<Item, int> iwiSupportByItem = utils.getIwiSupportByItem();
 
     const FPTree fptree(transactionsVector, minimum_support_threshold, iwiSupportByItem);
 
     const std::set<Pattern> prefix;
 
-    const std::set<Pattern> patterns = utils.IWIMining( fptree, minimum_support_threshold, prefix);
+    const std::set<Pattern> patterns = utils.IWIMining( fptree, minimum_support_threshold, prefix, 0);
 
-    for(const auto& setfloat : patterns)
+    for(const auto& setint : patterns)
     {
         bool first = true;
-        for(const auto& item : setfloat.first)
+        for(const auto& item : setint.first)
         {
             if(first)
             {
@@ -186,8 +192,8 @@ int main(int argc, char *argv[])
                 fd << "," << item.myName ;
             }
         }
-        std::cout << "|" << setfloat.second/transactionsVector.size() << "|"<< utils.calcDiversification(setfloat.first) << std::endl;
-        fd << "|" << setfloat.second/transactionsVector.size() << "|"<< utils.calcDiversification(setfloat.first) << std::endl;
+        std::cout << "|" << (((float)setint.second)/PRECISION)/transactionsVector.size() << "|"<< utils.calcDiversification(setint.first) << std::endl;
+        fd << "|" << (((float)setint.second)/PRECISION)/transactionsVector.size() << "|"<< utils.calcDiversification(setint.first) << std::endl;
     }
 
     fd.close();

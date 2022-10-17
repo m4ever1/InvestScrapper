@@ -4,6 +4,7 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#define PRECISION 10000
 
 class Item;
 
@@ -18,9 +19,9 @@ private:
 public:
     int myLabel;
     std::string myName;
-    float myExternalUtil;
+    int myExternalUtil;
     std::string mySector;
-    Item(std::string name, float extUtil, std::string sector);
+    Item(std::string name, int extUtil, std::string sector);
     const std::string toString() const;
     bool operator<(const Item& i2) const;
     bool operator==(const Item& i2) const;

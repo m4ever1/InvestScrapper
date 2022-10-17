@@ -8,7 +8,9 @@ from collections import defaultdict
 import pandas as pd
 import numpy as np
 from kmeans import getSectorsDict
-
+from math import sqrt
+import  pylab as pl
+from collections import OrderedDict
 
 def getFileDir():
     if getattr(sys, 'frozen', False):
@@ -21,25 +23,87 @@ def getFileDir():
 
     return datadir
 
-def downloadStockData(dateStart: dict, dateEnd: dict) -> pd.DataFrame:
+def getTable():
     resp = requests.get('http://en.wikipedia.org/wiki/List_of_S%26P_500_companies')
     soup = bs.BeautifulSoup(resp.text, 'lxml')
     table = soup.find('table', {'class': 'wikitable sortable'})
+    return table
+
+def compareSectors(df: pd.DataFrame):
+    gicsSects = getGICSSectors(df)
+    kmeansSects = getSectorsDict(df)[0]
+    countDict = {}
+
+    print("GICS SECTORS")
+
+    # for gicsSect in gicsSects.values():
+    #     tickerList = gicsSect
+    #     for ticker in tickerList:
+    #         try:
+    #             if kmeansSects[ticker] in countDict:
+    #                 countDict[kmeansSects[ticker]] += 1
+    #             else:
+    #                 countDict[kmeansSects[ticker]] = 1
+    #         except:
+    #             pass
+
+    # return countDict
+
+# reads tickers from a text file in a comma separated list e.g. (A,AAP,APPL,AAL) 
+# DOES NOT SANITIZE: SPACES IN BETWEEN, BRACKETS OR COMMAS, it only eliminates duplicates and sorts the tickers lexicographycally
+def readTickersFromFile(fileName: str = None) -> list:
+    if fileName is None:
+        fileName = "nasdaqTickers2013-2014.txt" 
+    with open(fileName, "r") as file:
+        text = file.read()
+        tickers = text.split(',')
+        tickers = sorted(set(tickers)) # set() filters non-uniques, and sorted... sorts.
+
+    return tickers
+
+def scrapeTickerList(index: str = "spy"):
+    url = 'http://en.wikipedia.org/wiki/List_of_S%26P_500_companies'
+    tickerColumn = 0
+    if index != "spy":
+        if index == "nasdaq":
+            url = "https://en.wikipedia.org/wiki/Nasdaq-100"
+            tickerColumn = 1
+            
+    resp = requests.get(url)
+    soup = bs.BeautifulSoup(resp.text, 'lxml')
+    table = soup.find('table', {'class': 'wikitable sortable', 'id' : 'constituents'})
     tickers = []
     for row in table.findAll('tr')[1:]:
-        ticker = row.findAll('td')[0].text
+        ticker = row.findAll('td')[tickerColumn].text
         ticker = ticker.strip()
         tickers.append(ticker)
 
     tickers = [s.replace('\n', '') for s in tickers]
 
+    return tickers
+
+def downloadStockData(dateStart: dict, dateEnd: dict, dataSet: str = "spy") -> pd.DataFrame:
+    if dataSet == "spy":
+        tickerList = scrapeTickerList("spy")
+    elif dataSet == "nasdaq":
+        if dateEnd["year"] < 2015:
+            tickerList = readTickersFromFile()
+        else:
+            tickerList = scrapeTickerList("nasdaq")
+    else: 
+        raise Exception("Invalid data set")
+
     start = datetime.datetime(dateStart["year"], dateStart["month"], dateStart["day"])
     end = datetime.datetime(dateEnd["year"], dateEnd["month"], dateEnd["day"])
     
-    data = yf.download(tickers, start=start, end=end)
+    data = yf.download(tickerList, start=start, end=end)
     data["Adj Close"].to_csv("stocks.csv")
+    data = data["Adj Close"]
+    data = data.dropna(how="all")
+    data = data.dropna(axis=1)
+    data = data.interpolate()
     
-    return data["Adj Close"]
+    return data
 
 def readDataFromCsv() -> pd.DataFrame:
     df = pd.read_csv("stocks.csv")
@@ -104,7 +168,7 @@ def convertToInputFile(df: pd.DataFrame, dateStart: dict, dateEnd: dict) -> str:
     dirname = getFileDir()
 
     outputFile = f'input-{dateStart["year"]}-{dateStart["month"]}-{dateStart["day"]}-To-{dateEnd["year"]}-{dateEnd["month"]}-{dateEnd["day"]}-.txt'
-    filePath = os.path.join(dirname, "cpp/bin/inputs")
+    filePath = os.path.join(dirname, "")
     absolutePath = os.path.join(filePath, outputFile)
 
     with open(absolutePath, "w") as f:
@@ -113,37 +177,93 @@ def convertToInputFile(df: pd.DataFrame, dateStart: dict, dateEnd: dict) -> str:
     
     return absolutePath
 
-def getGICSSectors(G: pd.DataFrame, table) -> defaultdict(list):
-    sectors_dict = defaultdict(list)
-    
-    for ticker in G.columns:
-        row = table.find("a", string=ticker).parent.parent
-        sector = row.findAll('td')[3].text
-        sectors_dict[sector].append(ticker)
-        
-    return sectors_dict
+def getGICSSectors(df: pd.DataFrame) -> defaultdict(list):
+    # sectors_dict = defaultdict(list)
+    sectors_dict = {}
+    table = getTable()
+    for ticker in df.columns:
+        try:
+            row = table.find("a", string=ticker).parent.parent
+            sector = row.findAll('td')[3].text
+            sectors_dict[ticker] = sector
+        except:
+            pass
 
-def generateInputFile(dateStart: dict, dateEnd: dict, granularity: str) -> list:
+    sectorList = []
+    tickersToDrop = []
+
+    for ticker in df.columns:
+        try:
+            sectorList.append(sectors_dict[ticker])
+        except:
+            tickersToDrop.append(ticker)
+
+    sectorListNr = [{val: key for key, val in enumerate(
+        OrderedDict.fromkeys(sectorList))}
+        [ele] for ele in sectorList]
+
+    returns = df.drop(tickersToDrop, axis=1).pct_change().mean() * 252
+    variance = df.drop(tickersToDrop, axis=1).pct_change().std() * sqrt(252)
+    returns.columns = ["Returns"]
+
+    variance.columns = ["Variance"]
+    sectors = pd.DataFrame(sectorListNr, index=returns.index)
+
+    #Concatenating the returns and variances into a single data-frame
+    ret_var = pd.concat([returns, variance, sectors], axis = 1).dropna()
+    ret_var.columns = ["Returns","Variance", "Sector"]
+
+    X =  ret_var.values #Converting ret_var into nummpy array
+    # X = ((df-df.mean())/(df.std())).values #Converting ret_var into nummpy array
+    
+    pl.scatter(X[:,0],X[:,1], c = X[:,2], cmap ="rainbow")
+    pl.show()
+    
+    # ticker = pd.DataFrame({'ticker' : ret_var.index})
+    # cluster_labels = pd.DataFrame({'sector' : kmeans.labels_})
+    # zip_iterator = zip(ret_var.index, kmeans.labels_)
+    # dataOut = dict(zip_iterator)
+    # dataOut = pd.concat([ticker, cluster_labels],axis = 1)
+    # dataOut = dataOut.set_index('ticker')
+    
+    # return dataOut
+
+def generateInputFile(dateStart: dict, dateEnd: dict, granularity: str, dataSet: str = "spy") -> list:
     assert(dateStart["day"] == dateEnd["day"])
     if granularity == "yearly":
         assert(dateStart["month"] == dateStart["month"])
     
     listOfFiles = []
-    df = readDataFromCsv()
+    df = downloadStockData(dateStart, dateEnd, dataSet)
 
     auxDateStart = dateStart.copy()
     while(auxDateStart != dateEnd):
         if auxDateStart["month"] == 12:
             auxDateStart["year"] += 1
             auxDateStart["month"] = 1
+
         auxDateEnd = auxDateStart.copy()
-        auxDateEnd[granularity] += 1
+        if granularity == "trimester" :
+            if auxDateEnd["month"] + 3 > 12:
+                auxDateEnd["month"] = (auxDateEnd["month"]+3)%12 if (auxDateEnd["month"]+3)%12 != 0 else 1
+                auxDateEnd["year"] += 1
+            else:
+                auxDateEnd["month"] += 3
+        else:
+            auxDateEnd[granularity] += 1
         
         auxDf = filterStocksByDate(df, auxDateStart, auxDateEnd)
         fname = convertToInputFile(auxDf, auxDateStart, auxDateEnd)
         
-        auxDateStart[granularity] += 1
+        if granularity == "trimester":
+            if auxDateStart["month"] + 3 > 12:
+                auxDateStart["month"] = (auxDateStart["month"]+3)%12 if (auxDateStart["month"]+3)%12 != 0 else 1
+                auxDateStart["year"] += 1
+            else:
+                auxDateStart["month"] += 3
+        else:
+            auxDateStart[granularity] += 1
+
         listOfFiles.append(fname)
         
     return listOfFiles
-    

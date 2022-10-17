@@ -127,3 +127,14 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+images/*
+nasdaq*
+output.txt
+oldInputs/*
+oldOutputs/*
+temp/*
+.vscode/*
+input-*
+cpp/bin/inputs/*
+cpp/bin/outputs/*

@@ -8,9 +8,9 @@ class EquivTrans
 {
 public:
     std::vector<Item> myItems;
-    float myWeight;
+    int myWeight;
 
-    EquivTrans(const Transaction&, float weight);
+    EquivTrans(const Transaction&, int weight);
    ~EquivTrans();
 private:
 };
