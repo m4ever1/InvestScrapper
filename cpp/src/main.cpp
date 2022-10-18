@@ -123,7 +123,7 @@ int main(int argc, char *argv[])
     std::string filename = argv[1];
     std::map<std::string, std::string> startDate;
     std::map<std::string, std::string> endDate;
-    std::string dataSet = "spy"
+    std::string dataSet = "spy";
     
     std::vector<std::string> splitResult;
     boost::algorithm::split(splitResult, filename, boost::is_any_of("-"));
@@ -138,7 +138,7 @@ int main(int argc, char *argv[])
 
     dataSet = splitResult.at(8);
 
-    std::cout << startDate["year"] << std::endl;
+    std::cout << dataSet << std::endl;
     InputParser myInputParser(filename);
     
     std::vector<Transaction> transactionsVector;
@@ -148,8 +148,8 @@ int main(int argc, char *argv[])
         return 1;
     }
     
-    std::string outputFileName = string_format("output-{%s}-{%s}-{%s}-To-{%s}-{%s}-{%s}-{%s}.txt", startDate["year"].c_str(),startDate["month"].c_str(),startDate["day"].c_str(),endDate["year"].c_str(),endDate["month"].c_str(),endDate["day"].c_str(),dataSet);
-    std::ofstream fd("outputs/"+outputFileName);
+    std::string outputFileName = string_format("output-{%s}-{%s}-{%s}-To-{%s}-{%s}-{%s}-{%s}.txt", startDate["year"].c_str(),startDate["month"].c_str(),startDate["day"].c_str(),endDate["year"].c_str(),endDate["month"].c_str(),endDate["day"].c_str(),dataSet.c_str());
+    std::ofstream fd("/home/miguel/InvestScrapper/cpp/bin/outputs/"+outputFileName);
     if (!fd.is_open())
     {
         std::cout << "FAILED OPENING OUTPUT FILE";

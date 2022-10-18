@@ -14,10 +14,10 @@ dateEnd = {
             "day"   : 1
         }
 
-listOfFiles = Utils.generateInputFile(dateStart, dateEnd, 'yearly', "nasdaq")
+listOfFiles = Utils.generateInputFile(dateStart, dateEnd, 'year', "spy")
 
 
-# DataMining.mine(listOfFiles)
+DataMining.mine(listOfFiles)
 
 # dateStart = {
 #         "year" : 2006,

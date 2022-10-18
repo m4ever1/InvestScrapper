@@ -4,8 +4,6 @@ from cvxopt import blas, solvers
 import matplotlib.pyplot as plt
 import numpy as np
 
-df = buildDataFrame()
-
 def optimal_portfolio(returns):
     n = len(returns)
     returns = np.asmatrix(returns)
@@ -37,13 +35,13 @@ def optimal_portfolio(returns):
     return np.asarray(wt), returns, risks
 
 def getWeights(df):
-    outDf = buildDataFrame()
+    # outDf = buildDataFrame()
 
-    ticksOut = outDf.iloc[6].tickers
+    # ticksOut = outDf.iloc[6].tickers
 
     normalizedDf = (df-df.mean())/df.std()
 
-    retsIn= np.array(df[ticksOut].pct_change().T)
+    retsIn= np.array(df.T)
 
     weights, rets, risks = optimal_portfolio(retsIn)
 

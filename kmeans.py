@@ -7,7 +7,6 @@ import numpy as np
 from yellowbrick.cluster import SilhouetteVisualizer
 import matplotlib.cm as cm
 import logging
-from scipy import stats
 
 logging.getLogger('matplotlib').setLevel(logging.ERROR)
 
@@ -22,7 +21,7 @@ def getSectorsDict(data):
     # data = data.sort_index()
     
     #Outlier elimination
-    data = data[data.columns[(np.abs(stats.zscore(data,axis=0)) < 3).all(axis=0)]]
+    # data = data[data.columns[(np.abs(stats.zscore(data,axis=0)) < 3).all(axis=0)]]
 
     #Calculating annual mean returns and variances
     returns = data.pct_change().mean()/data.pct_change().var()
@@ -45,22 +44,22 @@ def getSectorsDict(data):
     # pl.show()
 
     #
-    kmeans = KMeans(n_clusters = 8).fit(X)
-    centroids = kmeans.cluster_centers_
-    pl.scatter(X[:,0],X[:,1], c = kmeans.labels_, cmap ="rainbow")
-    pl.show()
+    # kmeans = KMeans(n_clusters = 11).fit(X)
+    # centroids = kmeans.cluster_centers_
+    # # pl.scatter(X[:,0],X[:,1], c = kmeans.labels_, cmap ="rainbow")
+    # # pl.show()
 
 
-    print(returns.idxmax())
-    tickerToDrop = returns.idxmax() if returns[returns.idxmax()] > returns[returns.idxmin()] else returns.idxmin() 
-    ret_var.drop(tickerToDrop, inplace =True)
+    # # print(returns.idxmax())
+    # tickerToDrop = returns.idxmax() if returns[returns.idxmax()] > returns[returns.idxmin()] else returns.idxmin() 
+    # ret_var.drop(tickerToDrop, inplace =True)
 
 
     X = ret_var.values
-    kmeans =KMeans(n_clusters = 8).fit(X)
+    kmeans =KMeans(n_clusters = 11).fit(X)
     centroids = kmeans.cluster_centers_
-    pl.scatter(X[:,0],X[:,1], c = kmeans.labels_, cmap ="rainbow")
-    pl.show()
+    # pl.scatter(X[:,0],X[:,1], c = kmeans.labels_, cmap ="rainbow")
+    # pl.show()
 
 
     ticker = pd.DataFrame({'ticker' : ret_var.index})
@@ -70,7 +69,7 @@ def getSectorsDict(data):
     # dataOut = pd.concat([ticker, cluster_labels],axis = 1)
     # dataOut = dataOut.set_index('ticker')
     
-    return dataOut, tickerToDrop
+    return dataOut
 
 def reverseMapSectors(dfInput, dfOutput):
     pass

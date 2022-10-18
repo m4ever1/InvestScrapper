@@ -11,6 +11,7 @@ from kmeans import getSectorsDict
 from math import sqrt
 import  pylab as pl
 from collections import OrderedDict
+from scipy import stats
 
 def getFileDir():
     if getattr(sys, 'frozen', False):
@@ -68,6 +69,9 @@ def scrapeTickerList(index: str = "spy"):
         if index == "nasdaq":
             url = "https://en.wikipedia.org/wiki/Nasdaq-100"
             tickerColumn = 1
+        elif index == "dow":
+            url = "https://en.wikipedia.org/wiki/Dow_Jones_Industrial_Average"
+            tickerColumn = 1
             
     resp = requests.get(url)
     soup = bs.BeautifulSoup(resp.text, 'lxml')
@@ -82,16 +86,21 @@ def scrapeTickerList(index: str = "spy"):
 
     return tickers
 
-def downloadStockData(dateStart: dict, dateEnd: dict, dataSet: str = "spy") -> pd.DataFrame:
+def downloadStockData(dateStart: dict, dateEnd: dict, dataSet: str = "spy", tickerList_in:list = None) -> pd.DataFrame:
     if dataSet == "spy":
         tickerList = scrapeTickerList("spy")
     elif dataSet == "nasdaq":
-        if dateEnd["year"] < 2015:
+        if dateEnd["year"] < 2012:
             tickerList = readTickersFromFile()
         else:
             tickerList = scrapeTickerList("nasdaq")
+    elif dataSet == "dow":
+        tickerList = scrapeTickerList("dow")
     else: 
-        raise Exception("Invalid data set")
+        if tickerList_in is None:
+            raise Exception("Invalid Ticker List")
+        else:
+            tickerList = tickerList_in
 
     start = datetime.datetime(dateStart["year"], dateStart["month"], dateStart["day"])
     end = datetime.datetime(dateEnd["year"], dateEnd["month"], dateEnd["day"])
@@ -100,7 +109,8 @@ def downloadStockData(dateStart: dict, dateEnd: dict, dataSet: str = "spy") -> p
     data["Adj Close"].to_csv("stocks.csv")
     data = data["Adj Close"]
     data = data.dropna(how="all")
-    data = data.dropna(axis=1)
+    if not isinstance(data,pd.Series):
+        data = data.dropna(axis=1)
     data = data.interpolate()
     
     return data
@@ -126,7 +136,7 @@ def filterStocksByDate(df: pd.DataFrame, dateStart: dict, dateEnd: dict) -> pd.D
     dfOut = dfOut.interpolate()
     return dfOut
 
-def convertToInputFile(df: pd.DataFrame, dateStart: dict, dateEnd: dict) -> str:
+def convertToInputFile(df: pd.DataFrame, dateStart: dict, dateEnd: dict, dataSet: str) -> str:
     G = pd.DataFrame()
     G = np.log(df).shift(-1) - np.log(df)
 
@@ -149,26 +159,32 @@ def convertToInputFile(df: pd.DataFrame, dateStart: dict, dateEnd: dict) -> str:
     # lMax = 1 + 1/Q + 2*np.sqrt(1/Q)
     # lMin = 1 + 1/Q - 2*np.sqrt(1/Q)
 
-    pctChangeDf = df.apply(lambda x: x.div(x.iloc[0]).subtract(1).mul(100))
+    # pctChangeDf = df.apply(lambda x: x.div(x.iloc[0]).subtract(1).mul(100))
 
     # stocksToTransact = []
     # for stck in list(sectors_dict.values()):
     #     stock_name = stck
     #     stocksToTransact += stock_name 
 
-    transactions = pctChangeDf
+    #Outlier elimination
+    # df = df[df.columns[(np.abs(stats.zscore(df,axis=0)) < 3).all(axis=0)]]
+
     # stockToSector = {stock: index for index, tuple in enumerate(sectors_dict.items()) for stock in tuple[1]}
-    stockToSector, droppedTicker = getSectorsDict(df)
+    stockToSector = getSectorsDict(df)
+
+    pctChangeDf = df.apply(lambda x: x.div(x.iloc[0]).subtract(1).mul(100))
+    transactions = pctChangeDf
+
     # listOfTransLists = '\r\n'.join(f"{' '.join(map(str, range(1, len(transactions.columns) + 1)))}:{transactions.iloc[i].sum()}:{np.array2string(transactions.iloc[i].values, max_line_width=float('inf'), floatmode='fixed', sign='-')[1:-1].strip()}" for i in range(len(transactions.index)))
-    transactions = transactions.drop(droppedTicker, axis=1, errors="ignore")
+    # transactions = transactions.drop(droppedTicker, axis=1, errors="ignore")
 
     listOfTransLists = '\r\n'.join(f"{' '.join(map(str, transactions.columns))}:{' '.join(map(str, [stockToSector[index] for index in transactions.iloc[i].index]))}:{np.array2string(transactions.iloc[i].values, max_line_width=float('inf'), floatmode='fixed', sign='-')[1:-1].strip()}" for i in range(len(transactions.index)))
     listOfTransLists = re.sub("  +", " ", listOfTransLists)
     
     dirname = getFileDir()
 
-    outputFile = f'input-{dateStart["year"]}-{dateStart["month"]}-{dateStart["day"]}-To-{dateEnd["year"]}-{dateEnd["month"]}-{dateEnd["day"]}-.txt'
-    filePath = os.path.join(dirname, "")
+    outputFile = f'input-{dateStart["year"]}-{dateStart["month"]}-{dateStart["day"]}-To-{dateEnd["year"]}-{dateEnd["month"]}-{dateEnd["day"]}-{dataSet}-.txt'
+    filePath = os.path.join(dirname, "cpp/bin/inputs")
     absolutePath = os.path.join(filePath, outputFile)
 
     with open(absolutePath, "w") as f:
@@ -252,8 +268,9 @@ def generateInputFile(dateStart: dict, dateEnd: dict, granularity: str, dataSet:
         else:
             auxDateEnd[granularity] += 1
         
-        auxDf = filterStocksByDate(df, auxDateStart, auxDateEnd)
-        fname = convertToInputFile(auxDf, auxDateStart, auxDateEnd)
+        # auxDf = filterStocksByDate(df, auxDateStart, auxDateEnd)
+        auxDf = df
+        fname = convertToInputFile(auxDf, auxDateStart, auxDateEnd, dataSet)
         
         if granularity == "trimester":
             if auxDateStart["month"] + 3 > 12:
@@ -267,3 +284,17 @@ def generateInputFile(dateStart: dict, dateEnd: dict, granularity: str, dataSet:
         listOfFiles.append(fname)
         
     return listOfFiles
+
+def getScoresFromFile() -> dict:
+    with open('images/score.txt') as scoresFile:
+        scores = {}
+        for line in scoresFile.readlines():
+            scores[int((line.split()[3]))] = float(line.split(":")[1][0:-1])
+        return scores
+
+def showScoresFig():
+    scores = getScoresFromFile()
+    # pl.ylim([0,1])
+    pl.xlim([2,19])
+    pl.plot(list(scores.keys()),list(scores.values()))
+    pl.show()
