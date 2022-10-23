@@ -10,7 +10,7 @@ import logging
 
 logging.getLogger('matplotlib').setLevel(logging.ERROR)
 
-def getSectorsDict(data):
+def getSectorsDict(data, num_clusters = 6):
     #Loading the data
     # data = pd.read_csv("stocks.csv")
     # data = data.set_index("Date")
@@ -56,7 +56,7 @@ def getSectorsDict(data):
 
 
     X = ret_var.values
-    kmeans =KMeans(n_clusters = 11).fit(X)
+    kmeans =KMeans(num_clusters, random_state=3425).fit(X)
     centroids = kmeans.cluster_centers_
     # pl.scatter(X[:,0],X[:,1], c = kmeans.labels_, cmap ="rainbow")
     # pl.show()
@@ -66,8 +66,8 @@ def getSectorsDict(data):
     cluster_labels = pd.DataFrame({'sector' : kmeans.labels_})
     zip_iterator = zip(ret_var.index, kmeans.labels_)
     dataOut = dict(zip_iterator)
-    # dataOut = pd.concat([ticker, cluster_labels],axis = 1)
-    # dataOut = dataOut.set_index('ticker')
+    # fullData = pd.concat([ticker, cluster_labels],axis = 1)
+    # fullData = fullData.set_index('ticker')
     
     return dataOut
 
@@ -222,3 +222,27 @@ def silhouetteAnalasys(X: pd.DataFrame):
 
 
     pl.close()
+    
+def getClusterGraph(n_clusters: int, labels, X):
+    fig = pl.figure(num=1, clear=True)
+    ax2 = pl.axes()
+    fig.set_size_inches(20, 2)
+    
+    colors = cm.nipy_spectral(labels.astype(float) / n_clusters)
+    ax2.set_yticks([])
+    ax2.vlines(
+        X, ymax=n_clusters*1.2,ymin=-n_clusters*0.8, colors=colors,zorder=-1
+    )
+
+    ax2.set_title("The visualization of the clustered data.")
+    ax2.set_xlabel("Stock variance")
+    # ax2.set_ylabel("Feature space for the 2nd feature")
+
+    # pl.suptitle(
+    #     "Silhouette analysis for KMeans clustering on sample data with n_clusters = %d"
+    #     % n_clusters,
+    #     fontsize=14,
+    #     fontweight="bold",
+    # )
+    fig.savefig(f"images/line-{n_clusters}-clusters-GICS.png", dpi=400)
+    # pl.close(fig)

@@ -41,7 +41,7 @@ std::list<EquivTrans> FPNode::convertToEquivTrans(Transaction S)
 }
 
 FPTree::FPTree(std::vector<EquivTrans>& transactions, const int& minimum_support_threshold) :
-    root( std::make_shared<FPNode>( Item("ROOT", (int) 0, "ROOT"), nullptr, 0 ) ), header_table(),
+    root( std::make_shared<FPNode>( Item("ROOT", (int) 0, -1), nullptr, 0 ) ), header_table(),
     minimum_support_threshold( minimum_support_threshold )
 {
     // scan the transactions counting the frequency of each item
@@ -118,7 +118,7 @@ FPTree::FPTree(std::vector<EquivTrans>& transactions, const int& minimum_support
 }
 
 FPTree::FPTree(const std::vector<Transaction>& transactions, const int& minimum_support_threshold_in, std::map<Item, int>& iwiSupportByItem) :
-    root( std::make_shared<FPNode>( Item("ROOT", (int) 0, "ROOT"), nullptr, 0 ) ), header_table(),
+    root( std::make_shared<FPNode>( Item("ROOT", (int) 0, -1), nullptr, 0 ) ), header_table(),
     minimum_support_threshold( minimum_support_threshold_in )
 {
 
@@ -152,7 +152,8 @@ FPTree::FPTree(const std::vector<Transaction>& transactions, const int& minimum_
     {
         count++;
         // std::cout << (int)count/(int)transaction.size() << '%' << std::endl;
-        std::cout << count << "/" << transactions.size() << std::endl;
+        Utils::showProgress((float)count/(float)transactions.size());
+        // std::cout << count << "/" << transactions.size() << std::endl;
         std::list<EquivTrans> listOfEquivTrans = FPNode::convertToEquivTrans(transaction);
         // Utils::printEquivTrans(listOfEquivTrans);
         // select and sort the frequent items in transaction according to the order of items_ordered_by_frequency

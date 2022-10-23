@@ -20,8 +20,8 @@ public:
     int myLabel;
     std::string myName;
     int myExternalUtil;
-    std::string mySector;
-    Item(std::string name, int extUtil, std::string sector);
+    int mySector;
+    Item(std::string name, int extUtil, int sector);
     const std::string toString() const;
     bool operator<(const Item& i2) const;
     bool operator==(const Item& i2) const;

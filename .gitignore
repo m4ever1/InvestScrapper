@@ -140,3 +140,5 @@ cpp/bin/inputs/*
 cpp/bin/outputs/*
 stocks.csv
 cpp/bin/main
+
+results/*

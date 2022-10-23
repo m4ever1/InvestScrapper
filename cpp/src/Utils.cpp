@@ -102,7 +102,8 @@ std::set<Pattern> Utils::IWIMining(const FPTree& fptree, const int& minSup, cons
         {
             if (level == 0)
             {
-                std::cout << pair.first.myName << " " << count << "/" << fptree.header_table.size() << std::endl;
+                showProgress((float)count/(float)fptree.header_table.size());
+                // std::cout << pair.first.myName << " " << count << "/" << fptree.header_table.size() << std::endl;
             }
             
             const Item& curr_item = pair.first;
@@ -255,7 +256,7 @@ void Utils::printEquivTrans(const std::list<EquivTrans>& equivTransList)
 
 const int Utils::calcDiversification(std::set<Item> items)
 {
-    std::unordered_set<std::string> sectorSet;
+    std::unordered_set<int> sectorSet;
     for (const auto& item : items)
     {
         sectorSet.insert(item.mySector);
@@ -263,6 +264,37 @@ const int Utils::calcDiversification(std::set<Item> items)
 
     return ( (float) sectorSet.size()/(float)items.size() )*100;
 }
+
+const void Utils::showProgress(const float& progress)
+{
+    int barWidth = 70;
+
+    std::cout << "[";
+    int pos = barWidth * progress;
+    for (int i = 0; i < barWidth; ++i) 
+    {
+        if (i < pos) 
+        {
+            std::cout << "=";
+        }
+        else if (i == pos) 
+        {
+            std::cout << ">";
+        }
+        else
+        {
+            std::cout << " ";
+        } 
+    }
+    std::cout << "] " << int(progress * 100.0) << " %\r";
+    std::cout.flush();
+
+    if(progress == 1)
+    {
+        std::cout << std::endl;
+    }
+}
+
 
 Utils::~Utils() {
 

@@ -19,6 +19,7 @@ def parseInput(filename = ""):
         entry["return"] = float(tokens[1])
         entry["diversity"] = float(tokens[2])
         entries.append(entry)
+    file.close()
     return entries
 
 def buildDataFrame(filename = ""):

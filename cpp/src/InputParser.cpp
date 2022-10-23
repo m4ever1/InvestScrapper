@@ -35,7 +35,7 @@ bool InputParser::buildTransactionsVector(std::vector<std::vector<Item>>& vector
             boost::split(utils, result[2], boost::is_any_of(" "));
             for(long unsigned int i = 0; i < names.size(); i++)
             {
-                Item itemToInsert(names[i], (int) (PRECISION * std::stof(utils[i])), sectors[i]);
+                Item itemToInsert(names[i], (int) (PRECISION * std::stof(utils[i])), std::stoi(sectors[i]));
                 itemVectorEntry.push_back(itemToInsert);
             }
             vectorOut.push_back(itemVectorEntry);

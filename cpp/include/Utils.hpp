@@ -18,6 +18,7 @@ public:
     std::map<Item, int>& getIwiSupportByItem();
     static void printEquivTrans(const std::list<EquivTrans>&);
     const int calcDiversification(std::set<Item>);
+    static const void showProgress(const float& progress);
 private:
     const std::vector<Transaction>& transactions;
     const int& minSup;

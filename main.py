@@ -1,23 +1,37 @@
 import pandas as pd
 import DataMining
 import Utils
+import backTester
 # import weightCalculate
 
 dateStart = {
-        "year" : 2012,
-        "month" : 8,
+        "year" : 2020,
+        "month" : 9,
         "day"   : 1
     }
 dateEnd = {
-        "year" : 2013,
-            "month" : 8,
+        "year" : 2021,
+            "month" : 9,
             "day"   : 1
         }
 
-listOfFiles = Utils.generateInputFile(dateStart, dateEnd, 'year', "spy")
+dataSet = "nasdaq"
+
+minSup = "8"
+minDiv = "70"
+
+listOfFiles = Utils.generateInputFile(dateStart, dateEnd, 'month', dataSet)
+
+# listOfFiles = Utils.generateInputFileKmeans(dateStart, dateEnd, dataSet)
 
 
-DataMining.mine(listOfFiles)
+DataMining.mine(listOfFiles, minSup, minDiv)
+
+print("Done with mining, back testing...")
+
+# backTester.backTest(dateStart, dateEnd, dataSet)
+backTester.backTestRollingWindow(dateStart, dateEnd, dataSet, 'month')
+
 
 # dateStart = {
 #         "year" : 2006,

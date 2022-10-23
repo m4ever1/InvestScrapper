@@ -1,7 +1,4 @@
 import datetime, requests, re, sys, os
-from multiprocessing.sharedctypes import Value
-from logging import exception
-from email.policy import default
 import bs4 as bs
 import yfinance as yf
 from collections import defaultdict
@@ -12,6 +9,7 @@ from math import sqrt
 import  pylab as pl
 from collections import OrderedDict
 from scipy import stats
+import json
 
 def getFileDir():
     if getattr(sys, 'frozen', False):
@@ -90,7 +88,7 @@ def downloadStockData(dateStart: dict, dateEnd: dict, dataSet: str = "spy", tick
     if dataSet == "spy":
         tickerList = scrapeTickerList("spy")
     elif dataSet == "nasdaq":
-        if dateEnd["year"] < 2012:
+        if dateEnd["year"] < 2000:
             tickerList = readTickersFromFile()
         else:
             tickerList = scrapeTickerList("nasdaq")
@@ -136,43 +134,23 @@ def filterStocksByDate(df: pd.DataFrame, dateStart: dict, dateEnd: dict) -> pd.D
     dfOut = dfOut.interpolate()
     return dfOut
 
-def convertToInputFile(df: pd.DataFrame, dateStart: dict, dateEnd: dict, dataSet: str) -> str:
-    G = pd.DataFrame()
-    G = np.log(df).shift(-1) - np.log(df)
-
-    G = G.dropna(how='all')
-
-    # rows = []
-    # for ticker_i in G:
-    #     column = []
-    #     for ticker_j in G:
-    #         column.append((np.mean(G[ticker_i].multiply(G[ticker_j])) - np.mean(G[ticker_i])*np.mean(G[ticker_j]))/(G[ticker_i].std()*G[ticker_j].std()))
-    #     rows.append(column)
-
-    # C = pd.DataFrame(rows, columns=G.columns, index=G.columns)
-
-    # t = G.shape[0]
-    # n = G.shape[1]
-
-    # Q = t/n
-
-    # lMax = 1 + 1/Q + 2*np.sqrt(1/Q)
-    # lMin = 1 + 1/Q - 2*np.sqrt(1/Q)
-
-    # pctChangeDf = df.apply(lambda x: x.div(x.iloc[0]).subtract(1).mul(100))
-
-    # stocksToTransact = []
-    # for stck in list(sectors_dict.values()):
-    #     stock_name = stck
-    #     stocksToTransact += stock_name 
+def convertToInputFile(df: pd.DataFrame, dateStart: dict, dateEnd: dict, dataSet: str, gics: bool = False, outlierElim: bool = False) -> list:
 
     #Outlier elimination
-    # df = df[df.columns[(np.abs(stats.zscore(df,axis=0)) < 3).all(axis=0)]]
+    auxDf = pd.DataFrame()
+    if outlierElim:
+        auxDf = df[df.columns[(np.abs(stats.zscore(df,axis=0)) < 3).all(axis=0)]].copy()
+    else:
+        auxDf = df.copy()
 
     # stockToSector = {stock: index for index, tuple in enumerate(sectors_dict.items()) for stock in tuple[1]}
-    stockToSector = getSectorsDict(df)
-
-    pctChangeDf = df.apply(lambda x: x.div(x.iloc[0]).subtract(1).mul(100))
+    stockToSector = {}
+    if not gics:
+        stockToSector = getSectorsDict(df) 
+    else:
+        stockToSector = getGICSSectors(df)
+        
+    pctChangeDf = auxDf.apply(lambda x: x.div(x.iloc[0]).subtract(1).mul(100))
     transactions = pctChangeDf
 
     # listOfTransLists = '\r\n'.join(f"{' '.join(map(str, range(1, len(transactions.columns) + 1)))}:{transactions.iloc[i].sum()}:{np.array2string(transactions.iloc[i].values, max_line_width=float('inf'), floatmode='fixed', sign='-')[1:-1].strip()}" for i in range(len(transactions.index)))
@@ -193,47 +171,85 @@ def convertToInputFile(df: pd.DataFrame, dateStart: dict, dateEnd: dict, dataSet
     
     return absolutePath
 
+def convertToInputFilesKmeans(df: pd.DataFrame, dateStart: dict, dateEnd: dict, dataSet: str) -> list:
+
+    #Outlier elimination
+    auxDf = df.copy()
+    returnList = []
+    for k in range(2,20):
+        # stockToSector = {stock: index for index, tuple in enumerate(sectors_dict.items()) for stock in tuple[1]}
+        stockToSector = {}
+
+        stockToSector = getSectorsDict(df, k) 
+
+            
+        pctChangeDf = auxDf.apply(lambda x: x.div(x.iloc[0]).subtract(1).mul(100))
+        transactions = pctChangeDf
+
+        # listOfTransLists = '\r\n'.join(f"{' '.join(map(str, range(1, len(transactions.columns) + 1)))}:{transactions.iloc[i].sum()}:{np.array2string(transactions.iloc[i].values, max_line_width=float('inf'), floatmode='fixed', sign='-')[1:-1].strip()}" for i in range(len(transactions.index)))
+        # transactions = transactions.drop(droppedTicker, axis=1, errors="ignore")
+
+        listOfTransLists = '\r\n'.join(f"{' '.join(map(str, transactions.columns))}:{' '.join(map(str, [stockToSector[index] for index in transactions.iloc[i].index]))}:{np.array2string(transactions.iloc[i].values, max_line_width=float('inf'), floatmode='fixed', sign='-')[1:-1].strip()}" for i in range(len(transactions.index)))
+        listOfTransLists = re.sub("  +", " ", listOfTransLists)
+        
+        dirname = getFileDir()
+
+        outputFile = f'input-{dateStart["year"]}-{dateStart["month"]}-{dateStart["day"]}-To-{dateEnd["year"]}-{dateEnd["month"]}-{dateEnd["day"]}-{dataSet+"kmeans"+str(k)}-.txt'
+        filePath = os.path.join(dirname, "cpp/bin/inputs")
+        absolutePath = os.path.join(filePath, outputFile)
+
+        returnList.append(absolutePath)
+
+        with open(absolutePath, "w") as f:
+            f.write(listOfTransLists)
+            print(f"Saved stocks to file: {absolutePath}")
+    
+    return returnList
+
 def getGICSSectors(df: pd.DataFrame) -> defaultdict(list):
     # sectors_dict = defaultdict(list)
     sectors_dict = {}
-    table = getTable()
-    for ticker in df.columns:
-        try:
-            row = table.find("a", string=ticker).parent.parent
-            sector = row.findAll('td')[3].text
-            sectors_dict[ticker] = sector
-        except:
-            pass
-
-    sectorList = []
     tickersToDrop = []
+    
+    print("Getting GICS sectors from file...")
+    with open("sectors.json") as jsonf:
+        sectors_dict = json.load(jsonf)
+    # for ticker in df.columns:
+    #     try:
+    #         tickerData = yf.Ticker(ticker)
+    #         sectors_dict[ticker] = tickerData.info["sector"]
+    #     except:
+    #         tickersToDrop.append(ticker)
+        
+    sectorList = []
 
     for ticker in df.columns:
         try:
             sectorList.append(sectors_dict[ticker])
         except:
-            tickersToDrop.append(ticker)
+            sectors_dict[ticker] = yf.Ticker(ticker).info["sector"]
+            sectorList.append(sectors_dict[ticker])
 
     sectorListNr = [{val: key for key, val in enumerate(
         OrderedDict.fromkeys(sectorList))}
         [ele] for ele in sectorList]
-
-    returns = df.drop(tickersToDrop, axis=1).pct_change().mean() * 252
-    variance = df.drop(tickersToDrop, axis=1).pct_change().std() * sqrt(252)
-    returns.columns = ["Returns"]
-
-    variance.columns = ["Variance"]
-    sectors = pd.DataFrame(sectorListNr, index=returns.index)
-
-    #Concatenating the returns and variances into a single data-frame
-    ret_var = pd.concat([returns, variance, sectors], axis = 1).dropna()
-    ret_var.columns = ["Returns","Variance", "Sector"]
-
-    X =  ret_var.values #Converting ret_var into nummpy array
-    # X = ((df-df.mean())/(df.std())).values #Converting ret_var into nummpy array
     
-    pl.scatter(X[:,0],X[:,1], c = X[:,2], cmap ="rainbow")
-    pl.show()
+    
+    return {df.columns[i]:sectorListNr[i] for i in range(len(df.columns))}
+    # returns = df.pct_change().mean()/df.pct_change().var()    
+    # returns.columns = ["Returns"]
+    
+    # sectors = pd.DataFrame(sectorListNr, index=returns.index)
+
+    # #Concatenating the returns and variances into a single data-frame
+    # ret_var = pd.concat([returns, sectors], axis = 1).dropna()
+    # ret_var.columns = ["Returns", "Sector"]
+
+    # X =  ret_var.values #Converting ret_var into nummpy array
+    # # X = ((df-df.mean())/(df.std())).values #Converting ret_var into nummpy array
+    
+    # pl.scatter(X[:,0],X[:,1], c = X[:,2], cmap ="rainbow")
+    # pl.show()
     
     # ticker = pd.DataFrame({'ticker' : ret_var.index})
     # cluster_labels = pd.DataFrame({'sector' : kmeans.labels_})
@@ -244,7 +260,7 @@ def getGICSSectors(df: pd.DataFrame) -> defaultdict(list):
     
     # return dataOut
 
-def generateInputFile(dateStart: dict, dateEnd: dict, granularity: str, dataSet: str = "spy") -> list:
+def generateInputFile(dateStart: dict, dateEnd: dict, granularity: str = "static", dataSet: str = "spy") -> list:
     assert(dateStart["day"] == dateEnd["day"])
     if granularity == "yearly":
         assert(dateStart["month"] == dateStart["month"])
@@ -253,8 +269,17 @@ def generateInputFile(dateStart: dict, dateEnd: dict, granularity: str, dataSet:
     df = downloadStockData(dateStart, dateEnd, dataSet)
 
     auxDateStart = dateStart.copy()
+    
+    if granularity == "static":
+        auxDf = df
+        fname = convertToInputFile(auxDf, dateStart, dateEnd, dataSet, False, True)
+        listOfFiles.append(fname)
+        fname = convertToInputFile(auxDf, dateStart, dateEnd, dataSet+"noelimGICS", True, False)
+        listOfFiles.append(fname)
+        return listOfFiles
+    
     while(auxDateStart != dateEnd):
-        if auxDateStart["month"] == 12:
+        if auxDateStart["month"] == 13:
             auxDateStart["year"] += 1
             auxDateStart["month"] = 1
 
@@ -266,11 +291,18 @@ def generateInputFile(dateStart: dict, dateEnd: dict, granularity: str, dataSet:
             else:
                 auxDateEnd["month"] += 3
         else:
-            auxDateEnd[granularity] += 1
+            if auxDateEnd["month"] == 12:
+                auxDateEnd["month"] = 1
+                auxDateEnd["year"] += 1
+            else:
+                auxDateEnd[granularity] += 1
         
         # auxDf = filterStocksByDate(df, auxDateStart, auxDateEnd)
         auxDf = df
-        fname = convertToInputFile(auxDf, auxDateStart, auxDateEnd, dataSet)
+        fname = convertToInputFile(auxDf, auxDateStart, auxDateEnd, dataSet, False, True)
+        listOfFiles.append(fname)
+        fname = convertToInputFile(auxDf, auxDateStart, auxDateEnd, dataSet+"noelimGICS", True, False)
+        listOfFiles.append(fname)
         
         if granularity == "trimester":
             if auxDateStart["month"] + 3 > 12:
@@ -280,8 +312,17 @@ def generateInputFile(dateStart: dict, dateEnd: dict, granularity: str, dataSet:
                 auxDateStart["month"] += 3
         else:
             auxDateStart[granularity] += 1
+            
+            
+    # fname = convertToInputFile(df, dateStart, dateEnd, dataSet)
+    # listOfFiles.append(fname)
+        
+    return listOfFiles
 
-        listOfFiles.append(fname)
+def generateInputFileKmeans(dateStart: dict, dateEnd: dict, dataSet: str = "spy") -> list:
+    
+    df = downloadStockData(dateStart, dateEnd, dataSet)
+    listOfFiles = convertToInputFilesKmeans(df, dateStart, dateEnd, dataSet)
         
     return listOfFiles
 
