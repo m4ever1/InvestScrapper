@@ -15,7 +15,7 @@ std::list<EquivTrans> FPNode::convertToEquivTrans(Transaction S)
 {
     std::sort(S.begin(), S.end(), [] (const Item& lhs, const Item& rhs){return lhs.myExternalUtil < rhs.myExternalUtil;});
     Transaction copyOfS = S;
-    int p = std::unique(copyOfS.begin(), copyOfS.end(), 
+    ulong p = std::unique(copyOfS.begin(), copyOfS.end(), 
             [] (const Item& lhs, const Item& rhs){return lhs.myExternalUtil == rhs.myExternalUtil;}) - copyOfS.begin();
     int wref = 0;
     std::list<EquivTrans> equivTransVec;

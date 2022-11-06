@@ -35,19 +35,6 @@ def compareSectors(df: pd.DataFrame):
 
     print("GICS SECTORS")
 
-    # for gicsSect in gicsSects.values():
-    #     tickerList = gicsSect
-    #     for ticker in tickerList:
-    #         try:
-    #             if kmeansSects[ticker] in countDict:
-    #                 countDict[kmeansSects[ticker]] += 1
-    #             else:
-    #                 countDict[kmeansSects[ticker]] = 1
-    #         except:
-    #             pass
-
-    # return countDict
-
 # reads tickers from a text file in a comma separated list e.g. (A,AAP,APPL,AAL) 
 # DOES NOT SANITIZE: SPACES IN BETWEEN, BRACKETS OR COMMAS, it only eliminates duplicates and sorts the tickers lexicographycally
 def readTickersFromFile(fileName: str = None) -> list:
@@ -119,10 +106,7 @@ def readDataFromCsv() -> pd.DataFrame:
     df = df.sort_index()
     
     return df
-    # df = df.dropna(how="all")
-    # df = df.dropna(axis=1)
-    # df = df.interpolate()
-    # df = df.sort_index()
+
 
 def filterStocksByDate(df: pd.DataFrame, dateStart: dict, dateEnd: dict) -> pd.DataFrame:
     start = datetime.datetime(dateStart["year"], dateStart["month"], dateStart["day"])
@@ -143,7 +127,6 @@ def convertToInputFile(df: pd.DataFrame, dateStart: dict, dateEnd: dict, dataSet
     else:
         auxDf = df.copy()
 
-    # stockToSector = {stock: index for index, tuple in enumerate(sectors_dict.items()) for stock in tuple[1]}
     stockToSector = {}
     if not gics:
         stockToSector = getSectorsDict(df) 
@@ -152,9 +135,6 @@ def convertToInputFile(df: pd.DataFrame, dateStart: dict, dateEnd: dict, dataSet
         
     pctChangeDf = auxDf.apply(lambda x: x.div(x.iloc[0]).subtract(1).mul(100))
     transactions = pctChangeDf
-
-    # listOfTransLists = '\r\n'.join(f"{' '.join(map(str, range(1, len(transactions.columns) + 1)))}:{transactions.iloc[i].sum()}:{np.array2string(transactions.iloc[i].values, max_line_width=float('inf'), floatmode='fixed', sign='-')[1:-1].strip()}" for i in range(len(transactions.index)))
-    # transactions = transactions.drop(droppedTicker, axis=1, errors="ignore")
 
     listOfTransLists = '\r\n'.join(f"{' '.join(map(str, transactions.columns))}:{' '.join(map(str, [stockToSector[index] for index in transactions.iloc[i].index]))}:{np.array2string(transactions.iloc[i].values, max_line_width=float('inf'), floatmode='fixed', sign='-')[1:-1].strip()}" for i in range(len(transactions.index)))
     listOfTransLists = re.sub("  +", " ", listOfTransLists)
@@ -177,7 +157,6 @@ def convertToInputFilesKmeans(df: pd.DataFrame, dateStart: dict, dateEnd: dict, 
     auxDf = df.copy()
     returnList = []
     for k in range(2,20):
-        # stockToSector = {stock: index for index, tuple in enumerate(sectors_dict.items()) for stock in tuple[1]}
         stockToSector = {}
 
         stockToSector = getSectorsDict(df, k) 
@@ -185,9 +164,6 @@ def convertToInputFilesKmeans(df: pd.DataFrame, dateStart: dict, dateEnd: dict, 
             
         pctChangeDf = auxDf.apply(lambda x: x.div(x.iloc[0]).subtract(1).mul(100))
         transactions = pctChangeDf
-
-        # listOfTransLists = '\r\n'.join(f"{' '.join(map(str, range(1, len(transactions.columns) + 1)))}:{transactions.iloc[i].sum()}:{np.array2string(transactions.iloc[i].values, max_line_width=float('inf'), floatmode='fixed', sign='-')[1:-1].strip()}" for i in range(len(transactions.index)))
-        # transactions = transactions.drop(droppedTicker, axis=1, errors="ignore")
 
         listOfTransLists = '\r\n'.join(f"{' '.join(map(str, transactions.columns))}:{' '.join(map(str, [stockToSector[index] for index in transactions.iloc[i].index]))}:{np.array2string(transactions.iloc[i].values, max_line_width=float('inf'), floatmode='fixed', sign='-')[1:-1].strip()}" for i in range(len(transactions.index)))
         listOfTransLists = re.sub("  +", " ", listOfTransLists)
@@ -214,12 +190,7 @@ def getGICSSectors(df: pd.DataFrame) -> defaultdict(list):
     print("Getting GICS sectors from file...")
     with open("sectors.json") as jsonf:
         sectors_dict = json.load(jsonf)
-    # for ticker in df.columns:
-    #     try:
-    #         tickerData = yf.Ticker(ticker)
-    #         sectors_dict[ticker] = tickerData.info["sector"]
-    #     except:
-    #         tickersToDrop.append(ticker)
+
         
     sectorList = []
 
@@ -236,29 +207,7 @@ def getGICSSectors(df: pd.DataFrame) -> defaultdict(list):
     
     
     return {df.columns[i]:sectorListNr[i] for i in range(len(df.columns))}
-    # returns = df.pct_change().mean()/df.pct_change().var()    
-    # returns.columns = ["Returns"]
-    
-    # sectors = pd.DataFrame(sectorListNr, index=returns.index)
 
-    # #Concatenating the returns and variances into a single data-frame
-    # ret_var = pd.concat([returns, sectors], axis = 1).dropna()
-    # ret_var.columns = ["Returns", "Sector"]
-
-    # X =  ret_var.values #Converting ret_var into nummpy array
-    # # X = ((df-df.mean())/(df.std())).values #Converting ret_var into nummpy array
-    
-    # pl.scatter(X[:,0],X[:,1], c = X[:,2], cmap ="rainbow")
-    # pl.show()
-    
-    # ticker = pd.DataFrame({'ticker' : ret_var.index})
-    # cluster_labels = pd.DataFrame({'sector' : kmeans.labels_})
-    # zip_iterator = zip(ret_var.index, kmeans.labels_)
-    # dataOut = dict(zip_iterator)
-    # dataOut = pd.concat([ticker, cluster_labels],axis = 1)
-    # dataOut = dataOut.set_index('ticker')
-    
-    # return dataOut
 
 def generateInputFile(dateStart: dict, dateEnd: dict, granularity: str = "static", dataSet: str = "spy") -> list:
     assert(dateStart["day"] == dateEnd["day"])

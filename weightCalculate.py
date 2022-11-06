@@ -1,3 +1,11 @@
+###################################################################
+# THIS IS DEAD CODE:                                              #
+#                                                                 #
+# prototype of code used for markovitz optimization,              #
+# did not end up in final version.                                #
+#                                                                 #
+###################################################################
+
 from inputReader import buildDataFrame
 import cvxopt as opt
 from cvxopt import blas, solvers
@@ -46,11 +54,3 @@ def getWeights(df):
     weights, rets, risks = optimal_portfolio(retsIn)
 
     return weights
-# weights, returns, risks = optimal_portfolio(return_vec)
-
-# fig = plt.figure()
-# plt.plot(stds, means, 'o')
-# plt.ylabel('mean')
-# plt.xlabel('std')
-# plt.plot(risks, returns, 'y-o')
-# py.iplot_mpl(fig, filename='efficient_frontier', strip_style=True)

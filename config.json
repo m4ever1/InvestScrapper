@@ -1,0 +1,21 @@
+{
+    "dateStart": 
+    {
+        "year" : 2012,
+        "month" : 8,
+        "day"   : 1,
+
+        "description" : "Starting date for the training period."
+    },
+    "dateEnd" : 
+    {
+        "year" : 2013,
+        "month" : 8,
+        "day"   : 1,
+        "description" : "Ending date for the training period." 
+    },
+    "dataSet" : "nasdaq",
+    "minSup" : "8",
+    "minDiv" : "70",
+    "granularity" : "static"
+}

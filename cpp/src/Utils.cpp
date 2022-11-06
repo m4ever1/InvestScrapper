@@ -29,19 +29,6 @@ void Utils::countItemIWISupport(const std::vector<Transaction>& transactions)
     }
 }
 
-int Utils::IWISupport(const Pattern& itemset) const
-{
-    // int IWI = std::numeric_limits<int>::max();   
-    // for(const Pattern& pat : itemset)
-    // {
-    //     if (pat.second < IWI)
-    //     {
-    //         IWI = pat.second;
-    //     }        
-    // }
-    // return IWI;
-}
-
 std::set<Pattern> Utils::getUnionWithHeaderEntry(const std::set<Pattern>& prefix, const std::pair<const Item, std::shared_ptr<FPNode>>& i)
 {
     
@@ -52,7 +39,7 @@ std::set<Pattern> Utils::getUnionWithHeaderEntry(const std::set<Pattern>& prefix
     return result;
 }
 
-std::set<Pattern> Utils::IWIMining(const FPTree& fptree, const int& minSup, const std::set<Pattern>& prefix, int level)
+std::set<Pattern> Utils::IWIMining(const FPTree& fptree, const int& minSup, int level)
 {
     if ( fptree.empty() ) { return {}; }
 
@@ -107,16 +94,6 @@ std::set<Pattern> Utils::IWIMining(const FPTree& fptree, const int& minSup, cons
             }
             
             const Item& curr_item = pair.first;
-
-            std::set<Pattern> I;
-            //  = getUnionWithHeaderEntry(prefix, pair);
-            // const int iwiSupportOfI = IWISupport(I);
-            // if (iwiSupportOfI <= minSup)
-            // {
-            //     F.merge(I);
-            // }
-            
-            // build the conditional fptree relative to the current item
 
             // start by generating the conditional pattern base
             std::vector<TransformedPrefixPath> conditional_pattern_base;
@@ -180,7 +157,7 @@ std::set<Pattern> Utils::IWIMining(const FPTree& fptree, const int& minSup, cons
             // conditional_fptree.printTree();
             // if (!conditional_fptree.empty())
             // {
-            std::set<Pattern> conditional_patterns = IWIMining(conditional_fptree, minSup, I, level+1);
+            std::set<Pattern> conditional_patterns = IWIMining(conditional_fptree, minSup, level+1);
             // }
             
 
@@ -254,7 +231,7 @@ void Utils::printEquivTrans(const std::list<EquivTrans>& equivTransList)
 
 }
 
-const int Utils::calcDiversification(std::set<Item> items)
+int Utils::calcDiversification(std::set<Item> items)
 {
     std::unordered_set<int> sectorSet;
     for (const auto& item : items)
@@ -265,7 +242,7 @@ const int Utils::calcDiversification(std::set<Item> items)
     return ( (float) sectorSet.size()/(float)items.size() )*100;
 }
 
-const void Utils::showProgress(const float& progress)
+void Utils::showProgress(const float& progress)
 {
     int barWidth = 70;
 

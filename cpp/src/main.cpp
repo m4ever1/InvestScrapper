@@ -118,7 +118,7 @@ void printTransactions(const std::vector<std::vector<Item>>& transactionsVector)
 int main(int argc, char *argv[])
 {
     // std::cout << "starting test" << std::endl;
-    
+    (void) argc; // Get rid of compiler warning...
     // test_1();
     std::string filename = argv[1];
     int minSupIn = std::stof(argv[2])*PRECISION;
@@ -151,14 +151,16 @@ int main(int argc, char *argv[])
     }
     
     std::string outputFileName = string_format("output-%s-%s-%s-To-%s-%s-%s-%s.txt", startDate["year"].c_str(),startDate["month"].c_str(),startDate["day"].c_str(),endDate["year"].c_str(),endDate["month"].c_str(),endDate["day"].c_str(),dataSet.c_str());
-    std::ofstream fd("/mnt/c/Users/mglvi/Documents/InvestScrapper/cpp/bin/outputs/"+outputFileName);
+    std::ofstream fd(filename.substr(0, filename.substr(0, filename.find_last_of('/')).find_last_of('/')) + "/outputs/" + outputFileName );
+    
+    
     if (!fd.is_open())
     {
         std::cout << "C++: FAILED OPENING OUTPUT FILE";
     }
     else
     {
-        std::cout << "C++: saving to " << outputFileName << std::endl; 
+        std::cout << "C++: saving to " <<  filename.substr(0, filename.substr(0, filename.find_last_of('/')).find_last_of('/')) + "/outputs/" + outputFileName << std::endl; 
     }
     
 
@@ -175,10 +177,8 @@ int main(int argc, char *argv[])
 
     const FPTree fptree(transactionsVector, minimum_support_threshold, iwiSupportByItem);
 
-    const std::set<Pattern> prefix;
-    
     std::cout << "C++: Began mining..." << std::endl;
-    const std::set<Pattern> patterns = utils.IWIMining( fptree, minimum_support_threshold, prefix, 0);
+    const std::set<Pattern> patterns = utils.IWIMining( fptree, minimum_support_threshold, 0);
 
     for(const auto& setint : patterns)
     {

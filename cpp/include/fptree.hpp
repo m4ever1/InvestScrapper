@@ -20,7 +20,7 @@ using Pattern = std::pair<std::set<Item>, int>;
 
 
 
-const int IWISupport(std::set<Pattern>& itemset);
+int IWISupport(std::set<Pattern>& itemset);
 class FPNode {
 public:
     const Item item;
